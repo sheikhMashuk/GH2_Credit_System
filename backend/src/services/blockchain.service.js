@@ -3,8 +3,14 @@ const blockchainConfig = require('../config/blockchain.config');
 
 class BlockchainService {
   constructor() {
-    this.contract = blockchainConfig.getContract();
-    this.provider = blockchainConfig.getProvider();
+    try {
+      this.contract = blockchainConfig.getContract();
+      this.provider = blockchainConfig.getProvider();
+    } catch (error) {
+      console.warn('Blockchain service initialized without contract:', error.message);
+      this.contract = null;
+      this.provider = blockchainConfig.getProvider();
+    }
   }
 
   /**

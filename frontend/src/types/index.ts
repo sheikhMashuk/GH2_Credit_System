@@ -1,8 +1,9 @@
 export interface User {
   id: string;
   name: string;
-  walletAddress: string;
-  role: 'PRODUCER' | 'VERIFIER';
+  walletAddress?: string;
+  email?: string;
+  role: 'PRODUCER' | 'VERIFIER' | 'REGULATORY_AUTHORITY';
   createdAt: string;
 }
 
@@ -52,7 +53,9 @@ export interface AuthContextType {
   isConnecting: boolean;
   connectWallet: () => Promise<void>;
   disconnect: () => void;
-  signUp: (name: string) => Promise<void>;
+  signUp: (name?: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => void;
 }
 
 export interface BlockchainConfig {

@@ -1,0 +1,23 @@
+{
+  "submissions": [
+    [
+      "1",
+      {
+        "_id": "1",
+        "producerId": "2",
+        "status": "PENDING",
+        "productionData": {
+          "productionDate": "2025-08-07",
+          "quantity": 1,
+          "location": "1",
+          "additionalNotes": "df"
+        },
+        "price": "1",
+        "tokenId": null,
+        "createdAt": "2025-08-30T13:27:34.453Z",
+        "updatedAt": "2025-08-30T13:27:34.453Z"
+      }
+    ]
+  ],
+  "nextId": 2
+}

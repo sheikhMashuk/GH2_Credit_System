@@ -39,7 +39,7 @@ const VerifierDashboard: React.FC = () => {
     setVerifyingIds(prev => new Set(prev).add(submissionId));
 
     try {
-      const result = await ApiService.verifySubmission(submissionId, user.id);
+      const result = await ApiService.verifySubmission(submissionId);
       
       toast.success('Submission verified and NFT minted successfully!');
       

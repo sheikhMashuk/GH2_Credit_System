@@ -1,15 +1,19 @@
 const express = require('express');
 const cors = require('cors');
 const connectDB = require('./config/database');
-require('dotenv').config({ path: '../.env' });
+require('dotenv').config({ path: '../../.env' });
 
 // Import routes
 const userRoutes = require('./api/routes/users.routes');
 const submissionRoutes = require('./api/routes/submissions.routes');
 const marketplaceRoutes = require('./api/routes/marketplace.routes');
+const regulatoryRoutes = require('./api/routes/regulatory.routes');
 
-// Connect to MongoDB
-connectDB();
+// Connect to MongoDB and run startup tasks
+connectDB().then(() => {
+  // Run startup tasks after database connection
+  require('./startup');
+});
 
 // Create Express app
 const app = express();
@@ -38,6 +42,7 @@ app.get('/health', (req, res) => {
 app.use('/api/users', userRoutes);
 app.use('/api/submissions', submissionRoutes);
 app.use('/api/marketplace', marketplaceRoutes);
+app.use('/api/regulatory', regulatoryRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

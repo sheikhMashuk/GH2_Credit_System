@@ -62,6 +62,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setProvider(web3Provider);
           setSigner(web3Provider.getSigner());
           setAccount(accounts[0]);
+          
+          // Store wallet address for API authentication
+          localStorage.setItem('walletAddress', accounts[0]);
         }
       } catch (error) {
         console.error('Error checking wallet connection:', error);
@@ -72,6 +75,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const handleAccountsChanged = (accounts: string[]) => {
     if (accounts.length > 0) {
       setAccount(accounts[0]);
+      localStorage.setItem('walletAddress', accounts[0]);
     } else {
       disconnect();
     }
@@ -114,6 +118,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setSigner(signerInstance);
       setAccount(accounts[0]);
 
+      // Store wallet address for API authentication and clear any JWT tokens
+      localStorage.setItem('walletAddress', accounts[0]);
+      localStorage.removeItem('authToken'); // Clear regulatory JWT tokens
+
       toast.success('Wallet connected successfully!');
     } catch (error: any) {
       console.error('Error connecting wallet:', error);
@@ -132,16 +140,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setProvider(null);
     setSigner(null);
     setUser(null);
+    localStorage.removeItem('walletAddress');
+    localStorage.removeItem('authToken'); // Clear any JWT tokens
     toast.success('Wallet disconnected');
   };
 
   const fetchUserData = async (walletAddress: string) => {
     try {
       const userData = await ApiService.getUserByWallet(walletAddress);
+      console.log('AuthContext - Fetched user data:', userData);
       setUser(userData);
     } catch (error: any) {
       if (error.response?.status === 404) {
         // User doesn't exist, they need to sign up
+        console.log('AuthContext - User not found, needs signup');
         setUser(null);
       } else {
         console.error('Error fetching user data:', error);
@@ -150,26 +162,55 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const signUp = async (name: string) => {
+  const signUp = async (name?: string) => {
     if (!account) {
       toast.error('Please connect your wallet first');
       return;
     }
 
     try {
-      const newUser = await ApiService.signUp(name, account);
+      // Pass name if provided, otherwise backend will auto-generate from wallet address
+      const newUser = await ApiService.signUp(name || '', account);
+      console.log('AuthContext - New user created:', newUser);
       setUser(newUser);
       toast.success('Account created successfully!');
     } catch (error: any) {
       console.error('Error signing up:', error);
       if (error.response?.status === 409) {
         // User already exists, fetch their data
+        console.log('AuthContext - User exists, fetching data');
         await fetchUserData(account);
         toast.success('Welcome back!');
       } else {
         toast.error('Failed to create account. Please try again.');
       }
     }
+  };
+
+  const login = async (email: string, password: string) => {
+    try {
+      const response = await ApiService.login(email, password);
+      const { token, user: userData } = response;
+      
+      // Store token in localStorage
+      localStorage.setItem('authToken', token);
+      
+      // Set user data
+      setUser(userData);
+      toast.success('Login successful!');
+    } catch (error: any) {
+      console.error('Error logging in:', error);
+      throw new Error(error.response?.data?.message || 'Login failed');
+    }
+  };
+
+  const logout = () => {
+    localStorage.removeItem('authToken');
+    setUser(null);
+    setAccount(null);
+    setProvider(null);
+    setSigner(null);
+    toast.success('Logged out successfully');
   };
 
   const value: AuthContextType = {
@@ -181,6 +222,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     connectWallet,
     disconnect,
     signUp,
+    login,
+    logout,
   };
 
   return (

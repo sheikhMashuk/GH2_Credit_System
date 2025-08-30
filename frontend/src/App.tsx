@@ -6,6 +6,7 @@ import Home from './pages/Home';
 import ProducerDashboard from './pages/ProducerDashboard';
 import VerifierDashboard from './pages/VerifierDashboard';
 import Marketplace from './pages/Marketplace';
+import RegulatoryPage from './pages/RegulatoryPage';
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
             <Route path="/producer" element={<ProducerDashboard />} />
             <Route path="/verifier" element={<VerifierDashboard />} />
             <Route path="/marketplace" element={<Marketplace />} />
+            <Route path="/regulatory" element={<RegulatoryPage />} />
           </Routes>
         </main>
       </div>

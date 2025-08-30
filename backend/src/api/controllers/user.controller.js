@@ -1,10 +1,11 @@
 const User = require('../../models/User');
 const InMemoryUser = require('../../models/InMemoryUser');
 const blockchainConfig = require('../../config/blockchain.config');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 
-// Use in-memory store if MongoDB Atlas has write restrictions
-const USE_MEMORY_STORE = process.env.USE_MEMORY_STORE === 'true';
-const UserModel = USE_MEMORY_STORE ? InMemoryUser : User;
+// Always use in-memory store for simplicity
+const UserModel = InMemoryUser;
 
 class UserController {
   /**
@@ -16,14 +17,21 @@ class UserController {
       console.log('Signup request received:', req.body);
       const { name, walletAddress } = req.body;
 
-      // Validate input
-      if (!name || !walletAddress) {
-        console.log('Missing required fields - name:', !!name, 'walletAddress:', !!walletAddress);
+      // Validate input - only walletAddress is required
+      if (!walletAddress) {
+        console.log('Missing required field - walletAddress:', !!walletAddress);
         return res.status(400).json({
           error: 'Missing required fields',
-          message: 'Name and walletAddress are required'
+          message: 'WalletAddress is required'
         });
       }
+
+      // Auto-generate name from wallet address if not provided
+      const displayName = name && name.trim() 
+        ? name.trim() 
+        : `User ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`;
+      
+      console.log('Using display name:', displayName);
 
       // Validate wallet address format
       console.log('Validating wallet address:', walletAddress);
@@ -56,9 +64,9 @@ class UserController {
       }
 
       // Create new user
-      console.log('Creating new user with data:', { name: name.trim(), walletAddress: walletAddress.toLowerCase(), role: 'PRODUCER' });
+      console.log('Creating new user with data:', { name: displayName, walletAddress: walletAddress.toLowerCase(), role: 'PRODUCER' });
       const newUser = await UserModel.create({
-        name: name.trim(),
+        name: displayName,
         walletAddress: walletAddress.toLowerCase(),
         role: 'PRODUCER' // Default role
       });
@@ -102,6 +110,82 @@ class UserController {
         error: 'Internal server error',
         message: 'Failed to create user',
         details: error.message
+      });
+    }
+  }
+
+  /**
+   * Login for regulatory authority
+   * POST /api/users/login
+   */
+  async login(req, res) {
+    try {
+      console.log('Login request received:', req.body);
+      const { email, password } = req.body;
+
+      // Validate input
+      if (!email || !password) {
+        return res.status(400).json({
+          error: 'Missing required fields',
+          message: 'Email and password are required'
+        });
+      }
+
+      // Find user by email
+      const user = await UserModel.findOne({ email: email.toLowerCase() });
+      
+      if (!user) {
+        return res.status(401).json({
+          error: 'Invalid credentials',
+          message: 'Email or password is incorrect'
+        });
+      }
+
+      // Check if user is regulatory authority
+      if (user.role !== 'REGULATORY_AUTHORITY') {
+        return res.status(403).json({
+          error: 'Access denied',
+          message: 'This login is only for regulatory authorities'
+        });
+      }
+
+      // Compare password
+      const isPasswordValid = await InMemoryUser.comparePassword(user, password);
+
+      if (!isPasswordValid) {
+        return res.status(401).json({
+          error: 'Invalid credentials',
+          message: 'Email or password is incorrect'
+        });
+      }
+
+      // Generate JWT token
+      const token = jwt.sign(
+        { 
+          userId: user._id, 
+          email: user.email, 
+          role: user.role 
+        },
+        process.env.JWT_SECRET || 'your-secret-key',
+        { expiresIn: '24h' }
+      );
+
+      res.status(200).json({
+        message: 'Login successful',
+        token,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role
+        }
+      });
+
+    } catch (error) {
+      console.error('Error in login:', error);
+      res.status(500).json({
+        error: 'Internal server error',
+        message: 'Failed to login'
       });
     }
   }

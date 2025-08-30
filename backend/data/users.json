@@ -1,0 +1,28 @@
+{
+  "users": [
+    [
+      "admin@greenregulator.gov",
+      {
+        "_id": "1",
+        "name": "Green Energy Regulatory Authority",
+        "email": "admin@greenregulator.gov",
+        "password": "$2b$12$4B1Q6dT7pfpfDnh6RBCiS.VCeM.jU3Gtsp14C6C9RHCnLVBgz3Zoy",
+        "role": "REGULATORY_AUTHORITY",
+        "createdAt": "2025-08-30T13:22:05.171Z",
+        "updatedAt": "2025-08-30T13:22:05.171Z"
+      }
+    ],
+    [
+      "0x215768f2a31f30fb62a53999238bb52039c95101",
+      {
+        "_id": "2",
+        "name": "User 0x2157...5101",
+        "walletAddress": "0x215768f2a31f30fb62a53999238bb52039c95101",
+        "role": "PRODUCER",
+        "createdAt": "2025-08-30T13:27:17.051Z",
+        "updatedAt": "2025-08-30T13:27:17.051Z"
+      }
+    ]
+  ],
+  "nextId": 3
+}

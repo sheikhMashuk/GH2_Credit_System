@@ -15,6 +15,7 @@ const Header: React.FC = () => {
   const navLinks = [
     { path: '/', label: 'Home' },
     { path: '/marketplace', label: 'Marketplace' },
+    { path: '/regulatory', label: 'Regulatory Authority' },
   ];
 
   // Add role-specific navigation

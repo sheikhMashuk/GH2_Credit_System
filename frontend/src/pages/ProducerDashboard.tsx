@@ -22,10 +22,21 @@ const ProducerDashboard: React.FC = () => {
   });
 
   useEffect(() => {
+    console.log('ProducerDashboard - Current user:', user);
+    console.log('ProducerDashboard - User role:', user?.role);
+    
+    if (!user) {
+      console.log('ProducerDashboard - No user found');
+      return;
+    }
+    
     if (user?.role !== 'PRODUCER') {
+      console.log('ProducerDashboard - Access denied for role:', user?.role);
       toast.error('Access denied. This page is for producers only.');
       return;
     }
+    
+    console.log('ProducerDashboard - Access granted, fetching submissions');
     fetchSubmissions();
   }, [user]);
 
@@ -34,11 +45,13 @@ const ProducerDashboard: React.FC = () => {
     
     try {
       setIsLoading(true);
-      const data = await ApiService.getSubmissionsByProducer(user.id);
-      setSubmissions(data);
+      const data = await ApiService.getMySubmissions();
+      console.log('ProducerDashboard - Fetched submissions data:', data);
+      setSubmissions(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching submissions:', error);
       toast.error('Failed to load submissions');
+      setSubmissions([]);
     } finally {
       setIsLoading(false);
     }
@@ -77,7 +90,7 @@ const ProducerDashboard: React.FC = () => {
         additionalNotes: formData.additionalNotes || ''
       };
 
-      await ApiService.createSubmission(user.id, productionData, price);
+      await ApiService.createSubmission(productionData, price);
       
       toast.success('Submission created successfully!');
       
@@ -92,6 +105,7 @@ const ProducerDashboard: React.FC = () => {
       setShowForm(false);
       
       // Refresh submissions
+      console.log('ProducerDashboard - Refreshing submissions after creation');
       await fetchSubmissions();
 
     } catch (error) {
@@ -128,6 +142,18 @@ const ProducerDashboard: React.FC = () => {
     }
   };
 
+  if (!user) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <div className="card text-center">
+          <Loader className="h-12 w-12 text-gray-500 mx-auto mb-4 animate-spin" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Loading...</h2>
+          <p className="text-gray-600">Please wait while we load your dashboard.</p>
+        </div>
+      </div>
+    );
+  }
+
   if (user?.role !== 'PRODUCER') {
     return (
       <div className="max-w-4xl mx-auto px-4 py-8">
@@ -135,6 +161,7 @@ const ProducerDashboard: React.FC = () => {
           <XCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
           <p className="text-gray-600">This page is only accessible to users with Producer role.</p>
+          <p className="text-sm text-gray-500 mt-2">Current role: {user?.role || 'No role assigned'}</p>
         </div>
       </div>
     );
@@ -164,28 +191,28 @@ const ProducerDashboard: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="card">
           <div className="text-2xl font-bold text-blue-600 mb-1">
-            {submissions.length}
+            {submissions?.length || 0}
           </div>
           <div className="text-gray-600">Total Submissions</div>
         </div>
         
         <div className="card">
           <div className="text-2xl font-bold text-yellow-600 mb-1">
-            {submissions.filter(s => s.status === 'PENDING').length}
+            {submissions?.filter(s => s.status === 'PENDING').length || 0}
           </div>
           <div className="text-gray-600">Pending Review</div>
         </div>
         
         <div className="card">
           <div className="text-2xl font-bold text-green-600 mb-1">
-            {submissions.filter(s => s.status === 'APPROVED').length}
+            {submissions?.filter(s => s.status === 'APPROVED').length || 0}
           </div>
           <div className="text-gray-600">Approved</div>
         </div>
         
         <div className="card">
           <div className="text-2xl font-bold text-purple-600 mb-1">
-            {submissions.filter(s => s.status === 'APPROVED').reduce((sum, s) => sum + parseFloat(s.price), 0).toFixed(2)}
+            {submissions?.filter(s => s.status === 'APPROVED').reduce((sum, s) => sum + parseFloat(s.price), 0).toFixed(2) || '0.00'}
           </div>
           <div className="text-gray-600">Total Value (MATIC)</div>
         </div>
@@ -310,7 +337,7 @@ const ProducerDashboard: React.FC = () => {
             <Loader className="h-6 w-6 animate-spin text-primary-600" />
             <span className="ml-2 text-gray-600">Loading submissions...</span>
           </div>
-        ) : submissions.length === 0 ? (
+        ) : !submissions || submissions.length === 0 ? (
           <div className="text-center py-8">
             <div className="text-gray-400 mb-4">
               <Clock className="h-12 w-12 mx-auto" />

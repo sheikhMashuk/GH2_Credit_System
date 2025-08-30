@@ -1,7 +1,7 @@
 const express = require('express');
-const userController = require('../controllers/user.controller');
-
 const router = express.Router();
+const userController = require('../controllers/user.controller');
+const { authenticateToken, requireRegulatoryAuth } = require('../../middleware/auth');
 
 /**
  * @route POST /api/users/signup
@@ -9,6 +9,13 @@ const router = express.Router();
  * @access Public
  */
 router.post('/signup', userController.signup);
+
+/**
+ * @route POST /api/users/login
+ * @desc Login a user
+ * @access Public
+ */
+router.post('/login', userController.login);
 
 /**
  * @route GET /api/users/:walletAddress

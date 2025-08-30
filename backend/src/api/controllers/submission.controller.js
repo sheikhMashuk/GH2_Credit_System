@@ -1,6 +1,12 @@
 const Submission = require('../../models/Submission');
+const InMemorySubmission = require('../../models/InMemorySubmission');
 const User = require('../../models/User');
+const InMemoryUser = require('../../models/InMemoryUser');
 const blockchainService = require('../../services/blockchain.service');
+
+// Always use in-memory store for simplicity
+const SubmissionModel = InMemorySubmission;
+const UserModel = InMemoryUser;
 
 class SubmissionController {
   /**
@@ -9,33 +15,30 @@ class SubmissionController {
    */
   async createSubmission(req, res) {
     try {
-      const { producerId, productionData, price } = req.body;
+      console.log('Creating submission with data:', req.body);
+      console.log('Authenticated user:', req.user);
+      const { productionData, price } = req.body;
 
       // Validate input
-      if (!producerId || !productionData || !price) {
+      if (!productionData || !price) {
+        console.log('Missing required fields:', { productionData, price });
         return res.status(400).json({
           error: 'Missing required fields',
-          message: 'producerId, productionData, and price are required'
+          message: 'productionData and price are required'
         });
       }
 
       if (price <= 0) {
+        console.log('Invalid price:', price);
         return res.status(400).json({
           error: 'Invalid price',
           message: 'Price must be greater than 0'
         });
       }
 
-      // Verify producer exists and has PRODUCER role
-      const producer = await User.findById(producerId);
-
-      if (!producer) {
-        return res.status(404).json({
-          error: 'Producer not found',
-          message: 'No producer found with this ID'
-        });
-      }
-
+      // Use authenticated user as producer
+      const producer = req.user;
+      
       if (producer.role !== 'PRODUCER') {
         return res.status(403).json({
           error: 'Access denied',
@@ -43,17 +46,23 @@ class SubmissionController {
         });
       }
 
-      // Create submission
-      const submission = await Submission.create({
-        producerId,
+      // Create submission with proper user ID
+      const submission = await SubmissionModel.create({
+        producerId: producer._id,
         productionData,
         price: price.toString(),
         status: 'PENDING'
       });
 
-      await submission.populate('producerId', 'name walletAddress');
+      // Add producer info to submission for response
+      submission.producer = {
+        id: producer._id,
+        name: producer.name,
+        walletAddress: producer.walletAddress
+      };
 
-      console.log('New submission created:', submission.id, 'by producer:', producer.name);
+      console.log('New submission created:', submission._id, 'by producer:', producer.name);
+      console.log('Total submissions in store:', SubmissionModel.getAll().length);
 
       res.status(201).json({
         message: 'Submission created successfully',
@@ -63,7 +72,7 @@ class SubmissionController {
           productionData: submission.productionData,
           price: submission.price,
           createdAt: submission.createdAt,
-          producer: submission.producerId
+          producer: submission.producer
         }
       });
 
@@ -82,9 +91,15 @@ class SubmissionController {
    */
   async getPendingSubmissions(req, res) {
     try {
-      const submissions = await Submission.find({ status: 'PENDING' })
-        .populate('producerId', 'name walletAddress')
-        .sort({ createdAt: 1 });
+      // Only verifiers can access pending submissions
+      if (req.user.role !== 'VERIFIER' && req.user.role !== 'REGULATORY_AUTHORITY') {
+        return res.status(403).json({
+          error: 'Access denied',
+          message: 'Only verifiers can view pending submissions'
+        });
+      }
+
+      const submissions = await SubmissionModel.find({ status: 'PENDING' });
 
       res.json({
         submissions: submissions.map(submission => ({
@@ -115,26 +130,21 @@ class SubmissionController {
       const { id } = req.params;
       const { verifierId } = req.body;
 
-      // Validate verifier
-      if (verifierId) {
-        const verifier = await User.findById(verifierId);
-
-        if (!verifier || verifier.role !== 'VERIFIER') {
-          return res.status(403).json({
-            error: 'Access denied',
-            message: 'Only users with VERIFIER role can verify submissions'
-          });
-        }
+      // Use authenticated user as verifier
+      const verifier = req.user;
+      
+      if (verifier.role !== 'VERIFIER' && verifier.role !== 'REGULATORY_AUTHORITY') {
+        return res.status(403).json({
+          error: 'Access denied',
+          message: 'Only users with VERIFIER or REGULATORY_AUTHORITY role can verify submissions'
+        });
       }
 
-      // Get submission with producer details
-      const submission = await Submission.findById(id)
-        .populate('producerId');
-
+      const submission = await SubmissionModel.findById(req.params.id);
       if (!submission) {
         return res.status(404).json({
           error: 'Submission not found',
-          message: 'No submission found with this ID'
+          message: 'The requested submission does not exist'
         });
       }
 
@@ -145,61 +155,84 @@ class SubmissionController {
         });
       }
 
-      console.log('Verifying submission:', id, 'for producer:', submission.producerId.name);
-
-      // Mint NFT and list on marketplace via blockchain service
-      try {
-        const mintResult = await blockchainService.mintAndListCredit(
-          submission.producerId.walletAddress,
-          parseFloat(submission.price),
-          {
-            productionDate: submission.productionData.productionDate,
-            quantity: submission.productionData.quantity,
-            location: submission.productionData.location,
-            submissionId: submission._id
-          }
+      // Get the status from request body (for regulatory authority approval/rejection)
+      const newStatus = req.body.status || 'APPROVED';
+      
+      let updatedSubmission;
+      
+      if (newStatus === 'APPROVED') {
+        // Mint NFT on blockchain for approved submissions
+        console.log('Minting NFT for submission:', submission._id);
+        const mintResult = await blockchainService.mintHydrogenCredit(
+          submission.productionData,
+          submission.price
         );
 
-        console.log('NFT minted successfully:', mintResult);
+        if (!mintResult.success) {
+          return res.status(500).json({
+            error: 'Blockchain error',
+            message: 'Failed to mint NFT on blockchain'
+          });
+        }
 
-        // Update submission status and add token ID
-        const updatedSubmission = await Submission.findByIdAndUpdate(
-          id,
+        // Update submission with approval and NFT details
+        updatedSubmission = await SubmissionModel.findByIdAndUpdate(
+          req.params.id,
           {
             status: 'APPROVED',
-            tokenId: mintResult.tokenId
+            tokenId: mintResult.tokenId,
+            verifiedBy: verifier._id,
+            verifiedAt: new Date()
           },
           { new: true }
-        ).populate('producerId', 'name walletAddress');
+        );
+
+        console.log('Submission approved and NFT minted:', {
+          submissionId: updatedSubmission._id,
+          tokenId: mintResult.tokenId,
+          verifier: verifier.name
+        });
 
         res.json({
-          message: 'Submission verified and NFT minted successfully',
+          message: 'Submission approved and NFT minted successfully',
           submission: {
             id: updatedSubmission._id,
             status: updatedSubmission.status,
             tokenId: updatedSubmission.tokenId,
-            productionData: updatedSubmission.productionData,
-            price: updatedSubmission.price,
-            createdAt: updatedSubmission.createdAt,
-            updatedAt: updatedSubmission.updatedAt,
-            producer: updatedSubmission.producerId
+            verifiedBy: verifier.name,
+            verifiedAt: updatedSubmission.verifiedAt
           },
-          blockchain: {
+          nft: {
             tokenId: mintResult.tokenId,
-            transactionHash: mintResult.transactionHash,
-            blockNumber: mintResult.blockNumber
+            transactionHash: mintResult.transactionHash
           }
         });
 
-      } catch (blockchainError) {
-        console.error('Blockchain operation failed:', blockchainError);
-        
-        // Update submission status to rejected due to blockchain error
-        await Submission.findByIdAndUpdate(id, { status: 'REJECTED' });
+      } else if (newStatus === 'REJECTED') {
+        // Update submission with rejection
+        updatedSubmission = await SubmissionModel.findByIdAndUpdate(
+          req.params.id,
+          {
+            status: 'REJECTED',
+            verifiedBy: verifier._id,
+            verifiedAt: new Date()
+          },
+          { new: true }
+        );
 
-        res.status(500).json({
-          error: 'Blockchain operation failed',
-          message: `Failed to mint NFT: ${blockchainError.message}`
+        console.log('Submission rejected:', {
+          submissionId: updatedSubmission._id,
+          verifier: verifier.name
+        });
+
+        res.json({
+          message: 'Submission rejected successfully',
+          submission: {
+            id: updatedSubmission._id,
+            status: updatedSubmission.status,
+            verifiedBy: verifier.name,
+            verifiedAt: updatedSubmission.verifiedAt
+          }
         });
       }
 
@@ -219,13 +252,27 @@ class SubmissionController {
   async getSubmissionsByProducer(req, res) {
     try {
       const { producerId } = req.params;
+      
+      // Verify user can access this producer's data
+      if (req.user._id !== producerId && req.user.role !== 'REGULATORY_AUTHORITY') {
+        return res.status(403).json({
+          error: 'Access denied',
+          message: 'You can only view your own submissions'
+        });
+      }
 
-      const submissions = await Submission.find({ producerId })
-        .populate('producerId', 'name walletAddress')
-        .sort({ createdAt: -1 });
+      const submissions = await SubmissionModel.find({ producerId });
+      console.log(`Found ${submissions.length} submissions for producer ${producerId}`);
 
-      res.json({
-        submissions: submissions.map(submission => ({
+      const submissionsArray = submissions.map(submission => {
+        // Get producer info for each submission
+        const producer = {
+          id: req.user._id,
+          name: req.user.name,
+          walletAddress: req.user.walletAddress
+        };
+
+        return {
           id: submission._id,
           status: submission.status,
           productionData: submission.productionData,
@@ -233,9 +280,11 @@ class SubmissionController {
           tokenId: submission.tokenId,
           createdAt: submission.createdAt,
           updatedAt: submission.updatedAt,
-          producer: submission.producerId
-        }))
+          producer: producer
+        };
       });
+
+      res.json(submissionsArray);
 
     } catch (error) {
       console.error('Error fetching producer submissions:', error);
@@ -254,30 +303,96 @@ class SubmissionController {
     try {
       const { status } = req.query;
       
-      const filter = status ? { status } : {};
+      let query = {};
+      if (status) {
+        query.status = status;
+      }
 
-      const submissions = await Submission.find(filter)
-        .populate('producerId', 'name walletAddress')
-        .sort({ createdAt: -1 });
+      const submissions = await SubmissionModel.find(query);
+      console.log(`Found ${submissions.length} submissions with status: ${status || 'all'}`);
 
-      res.json({
-        submissions: submissions.map(submission => ({
+      const submissionsArray = await Promise.all(submissions.map(async submission => {
+        // Get producer info for each submission
+        let producer = null;
+        try {
+          producer = await UserModel.findById(submission.producerId);
+        } catch (err) {
+          console.log('Could not find producer for submission:', submission._id);
+        }
+
+        return {
           id: submission._id,
+          _id: submission._id,
           status: submission.status,
-          tokenId: submission.tokenId,
           productionData: submission.productionData,
           price: submission.price,
+          tokenId: submission.tokenId,
           createdAt: submission.createdAt,
           updatedAt: submission.updatedAt,
-          producer: submission.producerId
-        }))
-      });
+          producer: producer ? {
+            id: producer._id,
+            name: producer.name,
+            walletAddress: producer.walletAddress
+          } : null
+        };
+      }));
+
+      res.json(submissionsArray);
 
     } catch (error) {
       console.error('Error fetching submissions:', error);
       res.status(500).json({
         error: 'Internal server error',
         message: 'Failed to fetch submissions'
+      });
+    }
+  }
+
+  /**
+   * Get submissions for the authenticated user
+   * GET /api/submissions/my-submissions
+   */
+  async getMySubmissions(req, res) {
+    try {
+      const user = req.user;
+      
+      // Only producers can have submissions
+      if (user.role !== 'PRODUCER') {
+        return res.status(403).json({
+          error: 'Access denied',
+          message: 'Only producers can have submissions'
+        });
+      }
+
+      const submissions = await SubmissionModel.find({ producerId: user._id });
+      console.log(`Found ${submissions.length} submissions for authenticated user ${user.name}`);
+
+      const submissionsArray = submissions.map(submission => {
+        const producer = {
+          id: user._id,
+          name: user.name,
+          walletAddress: user.walletAddress
+        };
+
+        return {
+          id: submission._id,
+          status: submission.status,
+          productionData: submission.productionData,
+          price: submission.price,
+          tokenId: submission.tokenId,
+          createdAt: submission.createdAt,
+          updatedAt: submission.updatedAt,
+          producer: producer
+        };
+      });
+
+      res.json(submissionsArray);
+
+    } catch (error) {
+      console.error('Error fetching user submissions:', error);
+      res.status(500).json({
+        error: 'Internal server error',
+        message: 'Failed to fetch user submissions'
       });
     }
   }

@@ -1,0 +1,8 @@
+# Docker Compose configuration removed
+# The application now uses MongoDB Atlas instead of PostgreSQL
+# Run the backend and frontend directly using npm commands:
+#
+# Backend: cd backend && npm run dev
+# Frontend: cd frontend && npm run dev
+#
+# Make sure to set up your .env file with MongoDB Atlas connection string

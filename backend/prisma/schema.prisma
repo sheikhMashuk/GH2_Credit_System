@@ -1,0 +1,52 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PRODUCER
+  VERIFIER
+}
+
+enum SubmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id            String   @id @default(cuid())
+  walletAddress String   @unique
+  name          String
+  role          Role     @default(PRODUCER)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  submissions Submission[]
+
+  @@map("users")
+}
+
+model Submission {
+  id             String           @id @default(cuid())
+  producerId     String
+  status         SubmissionStatus @default(PENDING)
+  productionData Json // Store production proof data as JSON
+  price          Decimal          @db.Decimal(18, 2) // Price in MATIC
+  tokenId        String?          // NFT token ID after minting
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  // Relations
+  producer User @relation(fields: [producerId], references: [id])
+
+  @@map("submissions")
+}

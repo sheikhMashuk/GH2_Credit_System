@@ -14,6 +14,42 @@ class BlockchainService {
   }
 
   /**
+   * Mint hydrogen credit NFT (called by regulatory authority)
+   * @param {object} productionData - Production data from submission
+   * @param {string} price - Price as string
+   * @returns {Promise<object>} Transaction result with token ID
+   */
+  async mintHydrogenCredit(productionData, price) {
+    try {
+      if (!this.contract) {
+        console.warn('Contract not available, simulating mint for development');
+        return {
+          success: true,
+          tokenId: Math.floor(Math.random() * 10000).toString(),
+          transactionHash: '0x' + Math.random().toString(16).substr(2, 64),
+          blockNumber: Math.floor(Math.random() * 1000000)
+        };
+      }
+
+      // Extract producer address from metadata
+      const producerAddress = productionData.producerAddress;
+      if (!producerAddress) {
+        throw new Error('Producer address is required for NFT minting');
+      }
+      
+      const priceInMatic = parseFloat(price);
+      
+      return await this.mintAndListCredit(producerAddress, priceInMatic, productionData);
+    } catch (error) {
+      console.error('Error in mintHydrogenCredit:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
    * Mint NFT and list it on marketplace
    * @param {string} producerAddress - Producer's wallet address
    * @param {number} priceInMatic - Price in MATIC

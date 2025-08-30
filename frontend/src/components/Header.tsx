@@ -65,13 +65,17 @@ const Header: React.FC = () => {
 
           {/* User Info and Actions */}
           <div className="flex items-center space-x-4">
-            {account && user ? (
+            {user ? (
               <div className="flex items-center space-x-3">
                 {/* User Info */}
                 <div className="text-right">
                   <p className="text-sm font-medium text-gray-900">{user.name}</p>
                   <p className="text-xs text-gray-500">
-                    {BlockchainUtils.shortenAddress(account)} • {user.role}
+                    {user.role === 'REGULATORY_AUTHORITY' ? (
+                      user.role
+                    ) : (
+                      `${account ? BlockchainUtils.shortenAddress(account) + ' • ' : ''}${user.role}`
+                    )}
                   </p>
                 </div>
                 
@@ -80,11 +84,11 @@ const Header: React.FC = () => {
                   <User className="h-5 w-5 text-primary-600" />
                 </div>
 
-                {/* Disconnect Button */}
+                {/* Disconnect/Logout Button */}
                 <button
                   onClick={disconnect}
                   className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-                  title="Disconnect Wallet"
+                  title={user.role === 'REGULATORY_AUTHORITY' ? 'Logout' : 'Disconnect Wallet'}
                 >
                   <LogOut className="h-5 w-5" />
                 </button>

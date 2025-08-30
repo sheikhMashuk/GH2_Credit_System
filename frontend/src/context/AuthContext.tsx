@@ -18,9 +18,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
 
-  // Check if wallet is already connected on component mount
+  // Check if wallet is already connected or JWT token exists on component mount
   useEffect(() => {
-    checkConnection();
+    // Check JWT token first - if valid, it takes priority over wallet connection
+    const initializeAuth = async () => {
+      await checkJWTToken();
+      
+      // Only check wallet connection if no JWT token was found
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        checkConnection();
+      }
+    };
+    
+    initializeAuth();
     
     // Listen for account changes
     if (window.ethereum) {
@@ -36,11 +47,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   }, []);
 
-  // Fetch user data when account changes
+  // Fetch user data when account changes (only for wallet-based auth)
   useEffect(() => {
-    if (account) {
+    if (account && !localStorage.getItem('authToken')) {
       fetchUserData(account);
-    } else {
+    } else if (!account && !localStorage.getItem('authToken')) {
       setUser(null);
     }
   }, [account]);
@@ -72,12 +83,53 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const checkJWTToken = async () => {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      try {
+        // Decode JWT to check if it's expired
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const currentTime = Date.now() / 1000;
+        
+        if (payload.exp > currentTime) {
+          // Token is still valid, restore user data
+          const userData = {
+            id: payload.userId,
+            email: payload.email,
+            role: payload.role,
+            name: 'Green Energy Regulatory Authority', // Default name for regulatory authority
+            createdAt: new Date().toISOString() // Add required createdAt field
+          };
+          
+          // Clear wallet-related state for regulatory authority
+          setAccount(null);
+          setProvider(null);
+          setSigner(null);
+          localStorage.removeItem('walletAddress');
+          
+          setUser(userData);
+          console.log('JWT token restored from localStorage:', userData);
+        } else {
+          // Token expired, remove it
+          localStorage.removeItem('authToken');
+          console.log('JWT token expired, removed from localStorage');
+        }
+      } catch (error) {
+        console.error('Error checking JWT token:', error);
+        localStorage.removeItem('authToken');
+      }
+    }
+  };
+
   const handleAccountsChanged = (accounts: string[]) => {
-    if (accounts.length > 0) {
-      setAccount(accounts[0]);
-      localStorage.setItem('walletAddress', accounts[0]);
-    } else {
-      disconnect();
+    // Only handle account changes if not using JWT auth
+    if (!localStorage.getItem('authToken')) {
+      if (accounts.length > 0) {
+        setAccount(accounts[0]);
+        localStorage.setItem('walletAddress', accounts[0]);
+      } else {
+        disconnect();
+      }
     }
   };
 
@@ -114,13 +166,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const accounts = await web3Provider.listAccounts();
       const signerInstance = web3Provider.getSigner();
 
+      // Clear any existing JWT auth when connecting wallet
+      localStorage.removeItem('authToken');
+      setUser(null);
+
       setProvider(web3Provider);
       setSigner(signerInstance);
       setAccount(accounts[0]);
 
-      // Store wallet address for API authentication and clear any JWT tokens
+      // Store wallet address for API authentication
       localStorage.setItem('walletAddress', accounts[0]);
-      localStorage.removeItem('authToken'); // Clear regulatory JWT tokens
 
       toast.success('Wallet connected successfully!');
     } catch (error: any) {
@@ -195,6 +250,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Store token in localStorage
       localStorage.setItem('authToken', token);
       
+      // Clear wallet-related state for regulatory authority login
+      setAccount(null);
+      setProvider(null);
+      setSigner(null);
+      localStorage.removeItem('walletAddress');
+      
       // Set user data
       setUser(userData);
       toast.success('Login successful!');
@@ -206,6 +267,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('authToken');
+    localStorage.removeItem('walletAddress'); // Clear wallet data too
     setUser(null);
     setAccount(null);
     setProvider(null);

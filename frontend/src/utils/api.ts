@@ -18,20 +18,23 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
   
-  // Add wallet address for wallet-based authentication (for producers/verifiers)
-  const walletAddress = localStorage.getItem('walletAddress');
-  console.log('Wallet address from localStorage:', walletAddress);
+  // Check if this is a regulatory authority request
+  const isRegulatoryRequest = config.url?.includes('/regulatory') || config.url?.includes('/login');
   
-  if (walletAddress) {
-    config.headers['x-wallet-address'] = walletAddress;
-    console.log('Added x-wallet-address header:', walletAddress);
-  }
-  
-  // Add auth token if available (for regulatory authorities) - only if no wallet address
+  // Add JWT token for regulatory authority requests
   const token = localStorage.getItem('authToken');
-  if (token && !walletAddress) {
+  if (token && isRegulatoryRequest) {
     config.headers.Authorization = `Bearer ${token}`;
-    console.log('Using JWT token for authentication');
+    console.log('Using JWT token for regulatory authentication');
+  } else {
+    // Add wallet address for wallet-based authentication (for producers/verifiers)
+    const walletAddress = localStorage.getItem('walletAddress');
+    console.log('Wallet address from localStorage:', walletAddress);
+    
+    if (walletAddress && !isRegulatoryRequest) {
+      config.headers['x-wallet-address'] = walletAddress;
+      console.log('Added x-wallet-address header:', walletAddress);
+    }
   }
   
   console.log('Request headers:', config.headers);

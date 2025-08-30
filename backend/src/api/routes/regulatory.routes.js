@@ -1,14 +1,28 @@
 const express = require('express');
 const router = express.Router();
-const submissionController = require('../controllers/submission.controller');
+const regulatoryController = require('../controllers/regulatory.controller');
 const { authenticateToken, requireRegulatoryAuth } = require('../../middleware/auth');
+
+/**
+ * @route GET /api/regulatory/dashboard
+ * @desc Get dashboard statistics and recent submissions
+ * @access Regulatory Authority only
+ */
+router.get('/dashboard', authenticateToken, requireRegulatoryAuth, regulatoryController.getDashboard);
 
 /**
  * @route GET /api/regulatory/submissions
  * @desc Get all submissions for regulatory review
  * @access Regulatory Authority only
  */
-router.get('/submissions', authenticateToken, requireRegulatoryAuth, submissionController.getAllSubmissions);
+router.get('/submissions', authenticateToken, requireRegulatoryAuth, regulatoryController.getAllSubmissions);
+
+/**
+ * @route GET /api/regulatory/submissions/pending
+ * @desc Get pending submissions for review
+ * @access Regulatory Authority only
+ */
+router.get('/submissions/pending', authenticateToken, requireRegulatoryAuth, regulatoryController.getPendingSubmissions);
 
 /**
  * @route GET /api/regulatory/submissions/approved
@@ -17,9 +31,8 @@ router.get('/submissions', authenticateToken, requireRegulatoryAuth, submissionC
  */
 router.get('/submissions/approved', authenticateToken, requireRegulatoryAuth, async (req, res) => {
   try {
-    // Filter for approved submissions
     req.query.status = 'APPROVED';
-    await submissionController.getAllSubmissions(req, res);
+    await regulatoryController.getAllSubmissions(req, res);
   } catch (error) {
     res.status(500).json({
       error: 'Internal server error',
@@ -35,9 +48,8 @@ router.get('/submissions/approved', authenticateToken, requireRegulatoryAuth, as
  */
 router.get('/submissions/rejected', authenticateToken, requireRegulatoryAuth, async (req, res) => {
   try {
-    // Filter for rejected submissions
     req.query.status = 'REJECTED';
-    await submissionController.getAllSubmissions(req, res);
+    await regulatoryController.getAllSubmissions(req, res);
   } catch (error) {
     res.status(500).json({
       error: 'Internal server error',
@@ -48,50 +60,16 @@ router.get('/submissions/rejected', authenticateToken, requireRegulatoryAuth, as
 
 /**
  * @route PUT /api/regulatory/submissions/:id/approve
- * @desc Approve a submission
+ * @desc Approve a submission and mint NFT
  * @access Regulatory Authority only
  */
-router.put('/submissions/:id/approve', authenticateToken, requireRegulatoryAuth, async (req, res) => {
-  try {
-    // Set the request parameters for approval
-    req.params.id = req.params.id;
-    req.body = {
-      status: 'APPROVED',
-      reviewedBy: req.user._id,
-      reviewedAt: new Date()
-    };
-    await submissionController.verifySubmission(req, res);
-  } catch (error) {
-    console.error('Error in approve route:', error);
-    res.status(500).json({
-      error: 'Internal server error',
-      message: 'Failed to approve submission'
-    });
-  }
-});
+router.put('/submissions/:id/approve', authenticateToken, requireRegulatoryAuth, regulatoryController.approveSubmission);
 
 /**
  * @route PUT /api/regulatory/submissions/:id/reject
  * @desc Reject a submission
  * @access Regulatory Authority only
  */
-router.put('/submissions/:id/reject', authenticateToken, requireRegulatoryAuth, async (req, res) => {
-  try {
-    // Set the request parameters for rejection
-    req.params.id = req.params.id;
-    req.body = {
-      status: 'REJECTED',
-      reviewedBy: req.user._id,
-      reviewedAt: new Date()
-    };
-    await submissionController.verifySubmission(req, res);
-  } catch (error) {
-    console.error('Error in reject route:', error);
-    res.status(500).json({
-      error: 'Internal server error',
-      message: 'Failed to reject submission'
-    });
-  }
-});
+router.put('/submissions/:id/reject', authenticateToken, requireRegulatoryAuth, regulatoryController.rejectSubmission);
 
 module.exports = router;

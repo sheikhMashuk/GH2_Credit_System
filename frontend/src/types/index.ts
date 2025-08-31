@@ -3,21 +3,21 @@ export interface User {
   name: string;
   walletAddress?: string;
   email?: string;
-  role: 'PRODUCER' | 'VERIFIER' | 'REGULATORY_AUTHORITY';
+  role: 'PRODUCER' | 'VERIFIER' | 'REGULATORY_AUTHORITY' | 'BUYER';
   createdAt: string;
 }
 
 export interface Submission {
   id: string;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
-  tokenId?: string;
+  creditId?: string;
+  credits?: number;
   productionData: {
     productionDate: string;
     quantity: number;
     location: string;
     [key: string]: any;
   };
-  price: string;
   createdAt: string;
   updatedAt: string;
   producer: {
@@ -27,22 +27,50 @@ export interface Submission {
   };
 }
 
-export interface MarketplaceListing {
-  tokenId: string;
+export interface CreditListing {
+  creditId: string;
   producer: string;
-  price: string;
-  priceInWei: string;
-  tokenURI: string;
-  metadata: {
-    name?: string;
-    description?: string;
-    image?: string;
-    attributes?: Array<{
-      trait_type: string;
-      value: string;
-    }>;
-    uri?: string;
+  quantity: string;
+  credits: string;
+  location: string;
+  productionDate: string;
+  isApproved: boolean;
+  price?: number;
+  isForSale?: boolean;
+  listedAt?: string;
+}
+
+export interface MarketplaceListing {
+  id: string;
+  creditId: string;
+  producerId: string;
+  producer: {
+    name: string;
+    walletAddress: string;
   };
+  credits: number;
+  pricePerCredit: number;
+  totalPrice: number;
+  quantity: number;
+  location: string;
+  productionDate: string;
+  listedAt: string;
+  status: 'ACTIVE' | 'SOLD' | 'CANCELLED';
+}
+
+export interface Transaction {
+  _id: string;
+  id?: string;
+  type: 'CREDIT_PURCHASE' | 'CREDIT_GENERATION';
+  fromAddress: string;
+  toAddress: string;
+  credits: number;
+  price?: number;
+  transactionHash: string;
+  blockNumber?: number;
+  status: 'PENDING' | 'CONFIRMED' | 'FAILED';
+  createdAt: string;
+  listingId?: string;
 }
 
 export interface AuthContextType {
@@ -53,7 +81,7 @@ export interface AuthContextType {
   isConnecting: boolean;
   connectWallet: () => Promise<void>;
   disconnect: () => void;
-  signUp: (name?: string) => Promise<void>;
+  signUp: (name?: string, role?: 'PRODUCER' | 'BUYER') => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
 }

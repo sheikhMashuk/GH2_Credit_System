@@ -1,6 +1,7 @@
 const InMemorySubmission = require('../../models/InMemorySubmission');
 const InMemoryUser = require('../../models/InMemoryUser');
 const blockchainService = require('../../services/blockchain.service');
+const CreditLifecycleService = require('../../services/credit-lifecycle.service');
 
 const SubmissionModel = InMemorySubmission;
 const UserModel = InMemoryUser;
@@ -36,8 +37,8 @@ class RegulatoryController {
           _id: submission._id,
           status: submission.status,
           productionData: submission.productionData,
-          price: submission.price,
-          tokenId: submission.tokenId,
+          credits: submission.credits,
+          creditId: submission.creditId,
           createdAt: submission.createdAt,
           updatedAt: submission.updatedAt,
           verifiedAt: submission.verifiedAt,
@@ -113,7 +114,7 @@ class RegulatoryController {
   }
 
   /**
-   * Approve a submission and mint NFT
+   * Approve a submission and generate credits
    * PUT /api/regulatory/submissions/:id/approve
    */
   async approveSubmission(req, res) {
@@ -138,7 +139,7 @@ class RegulatoryController {
         });
       }
 
-      // Get producer information for NFT minting
+      // Get producer information for credit generation
       const producer = await UserModel.findById(submission.producerId);
       if (!producer) {
         return res.status(404).json({
@@ -147,70 +148,104 @@ class RegulatoryController {
         });
       }
 
-      // Mint NFT on blockchain using producer's wallet address
-      console.log('Minting NFT for submission:', submission._id, 'Producer wallet:', producer.walletAddress);
+      console.log('Generating credits for producer wallet:', producer.walletAddress, 'for submission:', submission._id);
       
-      // Prepare metadata for NFT
-      const nftMetadata = {
-        ...submission.productionData,
-        producerAddress: producer.walletAddress,
-        submissionId: submission._id,
-        approvedBy: authority.name,
-        approvedAt: new Date().toISOString()
+      // Create submission data for IPFS storage
+      const submissionForIPFS = {
+        ...submission,
+        producerId: producer.walletAddress,
+        producerName: producer.name,
+        id: submission._id
       };
-
-      const mintResult = await blockchainService.mintHydrogenCredit(
-        nftMetadata,
-        submission.price
+      
+      // Generate credits on blockchain with automatic IPFS sync
+      const creditResult = await blockchainService.generateCreditsOnChain(
+        producer.walletAddress,
+        submission.productionData.quantity,
+        submission.productionData.location,
+        submission.productionData.productionDate,
+        submissionForIPFS
       );
 
-      if (!mintResult.success) {
+      if (!creditResult.success) {
         return res.status(500).json({
           error: 'Blockchain error',
-          message: 'Failed to mint NFT on blockchain',
-          details: mintResult.error
+          message: 'Failed to generate credits on blockchain',
+          details: creditResult.error
         });
       }
 
-      // Update submission with approval and NFT details
+      // Update submission with approval and credit details
       const updatedSubmission = await SubmissionModel.findByIdAndUpdate(
         id,
         {
           status: 'APPROVED',
-          tokenId: mintResult.tokenId,
+          creditId: creditResult.creditId,
+          credits: creditResult.credits,
           verifiedBy: authority._id,
-          verifiedAt: new Date(),
-          transactionHash: mintResult.transactionHash
+          verifiedAt: new Date()
         },
         { new: true }
       );
 
-      console.log('Submission approved and NFT minted:', {
+      // Update producer's total credits and handle IPFS upload
+      const currentCredits = producer.totalCredits || 0;
+      const newTotalCredits = currentCredits + creditResult.credits;
+      
+      await UserModel.findByIdAndUpdate(
+        submission.producerId,
+        { totalCredits: newTotalCredits }
+      );
+
+      // Handle IPFS upload for credit approval
+      const ipfsResult = await CreditLifecycleService.handleCreditApproval(submission, creditResult);
+      
+      // Real-time IPFS sync for producer balance update
+      try {
+        const balanceIpfsHash = await blockchainService.updateProducerCreditsInIPFS(
+          producer.walletAddress,
+          newTotalCredits,
+          'credit_approval_balance_update'
+        );
+        console.log(`[RegulatoryController] ✓ Producer balance updated in IPFS: ${balanceIpfsHash}`);
+      } catch (ipfsError) {
+        console.warn('[RegulatoryController] Failed to update producer balance in IPFS:', ipfsError.message);
+      }
+      
+      console.log('Submission approved and credits generated:', {
         submissionId: updatedSubmission._id,
-        tokenId: mintResult.tokenId,
+        creditId: creditResult.creditId,
+        credits: creditResult.credits,
         authority: authority.name,
-        producer: producer.name
+        producer: producer.name,
+        ipfsUpload: ipfsResult.success ? 'SUCCESS' : 'FAILED',
+        ipfsHash: ipfsResult.ipfsHash,
+        producerTotalCredits: newTotalCredits
       });
 
       res.json({
-        message: 'Submission approved and NFT minted successfully',
+        message: 'Submission approved and credits generated successfully',
         submission: {
           id: updatedSubmission._id,
           status: updatedSubmission.status,
-          tokenId: updatedSubmission.tokenId,
+          creditId: updatedSubmission.creditId,
+          credits: updatedSubmission.credits,
           verifiedBy: authority.name,
           verifiedAt: updatedSubmission.verifiedAt,
-          transactionHash: updatedSubmission.transactionHash,
           producer: {
             id: producer._id,
             name: producer.name,
             walletAddress: producer.walletAddress
           }
         },
-        nft: {
-          tokenId: mintResult.tokenId,
-          transactionHash: mintResult.transactionHash,
-          blockNumber: mintResult.blockNumber
+        creditInfo: {
+          creditId: creditResult.creditId,
+          credits: creditResult.credits,
+          quantity: creditResult.quantity,
+          transactionHash: creditResult.transactionHash,
+          ipfsHash: ipfsResult.ipfsHash,
+          ipfsUpload: ipfsResult.success,
+          generatedFor: producer.walletAddress
         }
       });
 

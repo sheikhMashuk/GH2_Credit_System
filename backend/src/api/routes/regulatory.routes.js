@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const regulatoryController = require('../controllers/regulatory.controller');
+const submissionController = require('../controllers/submission.controller');
 const { authenticateToken, requireRegulatoryAuth } = require('../../middleware/auth');
 
 /**
@@ -60,7 +61,7 @@ router.get('/submissions/rejected', authenticateToken, requireRegulatoryAuth, as
 
 /**
  * @route PUT /api/regulatory/submissions/:id/approve
- * @desc Approve a submission and mint NFT
+ * @desc Approve a submission and generate credits
  * @access Regulatory Authority only
  */
 router.put('/submissions/:id/approve', authenticateToken, requireRegulatoryAuth, regulatoryController.approveSubmission);

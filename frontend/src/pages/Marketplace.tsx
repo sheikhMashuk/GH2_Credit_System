@@ -166,7 +166,7 @@ const Marketplace: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {listings.map((listing) => (
               <CreditCard
-                key={listing.tokenId}
+                key={listing.id || listing.creditId}
                 listing={listing}
                 onPurchaseSuccess={handlePurchaseSuccess}
               />

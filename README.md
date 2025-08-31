@@ -64,12 +64,9 @@ Copy `.env.example` to `.env` and configure:
    npm install
    ```
 
-2. Deploy to Mumbai testnet:
-   ```bash
-   npx hardhat run scripts/deploy.js --network mumbai
-   ```
 
-3. Update `.env` with the deployed contract address
+
+2. Update `.env` with the deployed contract address
 
 ## Development
 

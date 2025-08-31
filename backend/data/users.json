@@ -13,16 +13,113 @@
       }
     ],
     [
-      "0x215768f2a31f30fb62a53999238bb52039c95101",
+      "0x2da70255e14c94791c31150fcf4342a977abe0ac",
       {
         "_id": "2",
+        "name": "User 0x2dA7...e0aC",
+        "walletAddress": "0x2da70255e14c94791c31150fcf4342a977abe0ac",
+        "role": "PRODUCER",
+        "totalCredits": 275.67,
+        "createdAt": "2025-08-30T20:26:22.426Z",
+        "updatedAt": "2025-08-30T21:40:21.660Z"
+      }
+    ],
+    [
+      "0x1234567890123456789012345678901234567890",
+      {
+        "_id": "3",
+        "name": "Test Producer",
+        "walletAddress": "0x1234567890123456789012345678901234567890",
+        "role": "PRODUCER",
+        "totalCredits": 0,
+        "createdAt": "2025-08-30T21:38:13.391Z",
+        "updatedAt": "2025-08-30T21:38:13.391Z"
+      }
+    ],
+    [
+      "0x215768f2a31f30fb62a53999238bb52039c95101",
+      {
+        "_id": "4",
         "name": "User 0x2157...5101",
         "walletAddress": "0x215768f2a31f30fb62a53999238bb52039c95101",
         "role": "PRODUCER",
-        "createdAt": "2025-08-30T13:27:17.051Z",
-        "updatedAt": "2025-08-30T13:27:17.051Z"
+        "totalCredits": 22.32,
+        "createdAt": "2025-08-30T21:50:25.178Z",
+        "updatedAt": "2025-08-30T22:01:56.617Z"
+      }
+    ],
+    [
+      "0x480395fdc43e46a415a79f858d939d2afc1631ee",
+      {
+        "_id": "5",
+        "name": "User 0x4803...31ee",
+        "walletAddress": "0x480395fdc43e46a415a79f858d939d2afc1631ee",
+        "role": "PRODUCER",
+        "totalCredits": 0,
+        "createdAt": "2025-08-30T23:31:31.106Z",
+        "updatedAt": "2025-08-30T23:31:31.106Z"
+      }
+    ],
+    [
+      "0x7e42c7ebf51a75cc548165c84cef9b47dbea953b",
+      {
+        "_id": "6",
+        "name": "User 0x7e42...953b",
+        "walletAddress": "0x7e42c7ebf51a75cc548165c84cef9b47dbea953b",
+        "role": "PRODUCER",
+        "totalCredits": 0,
+        "createdAt": "2025-08-30T23:37:36.926Z",
+        "updatedAt": "2025-08-30T23:37:36.926Z"
+      }
+    ],
+    [
+      "0x0f58b5580170b7974896491b28848aabdbf9e525",
+      {
+        "_id": "7",
+        "name": "User 0x0f58...e525",
+        "walletAddress": "0x0f58b5580170b7974896491b28848aabdbf9e525",
+        "role": "PRODUCER",
+        "totalCredits": 0,
+        "createdAt": "2025-08-30T23:48:51.567Z",
+        "updatedAt": "2025-08-30T23:48:51.567Z"
+      }
+    ],
+    [
+      "0xa59e255042bdd3c17bf3984b57c1ee080c7d7350",
+      {
+        "_id": "8",
+        "name": "User 0xa59e...7350",
+        "walletAddress": "0xa59e255042bdd3c17bf3984b57c1ee080c7d7350",
+        "role": "PRODUCER",
+        "totalCredits": 0,
+        "createdAt": "2025-08-31T00:36:50.658Z",
+        "updatedAt": "2025-08-31T00:36:50.658Z"
+      }
+    ],
+    [
+      "0x3d2e57f326ef0b85be01bbfdc93657fb47581d91",
+      {
+        "_id": "9",
+        "name": "User 0x3d2e...1d91",
+        "walletAddress": "0x3d2e57f326ef0b85be01bbfdc93657fb47581d91",
+        "role": "PRODUCER",
+        "totalCredits": 0,
+        "createdAt": "2025-08-31T00:40:03.153Z",
+        "updatedAt": "2025-08-31T00:40:03.153Z"
+      }
+    ],
+    [
+      "0x5debc79c4e64400b5a9dabdc1749fd98ffbb69bf",
+      {
+        "_id": "10",
+        "name": "mask",
+        "walletAddress": "0x5debc79c4e64400b5a9dabdc1749fd98ffbb69bf",
+        "role": "BUYER",
+        "totalCredits": 19,
+        "createdAt": "2025-08-31T00:56:09.303Z",
+        "updatedAt": "2025-08-31T01:32:00.089Z"
       }
     ]
   ],
-  "nextId": 3
+  "nextId": 11
 }

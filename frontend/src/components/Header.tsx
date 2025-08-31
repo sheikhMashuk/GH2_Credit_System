@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { BlockchainUtils } from '../utils/blockchain';
 
 const Header: React.FC = () => {
-  const { account, user, disconnect } = useAuth();
+  const { account, user, disconnect, connectWallet } = useAuth();
   const location = useLocation();
 
   const isActive = (path: string) => {
@@ -15,12 +15,17 @@ const Header: React.FC = () => {
   const navLinks = [
     { path: '/', label: 'Home' },
     { path: '/marketplace', label: 'Marketplace' },
+    { path: '/transactions', label: 'Transactions' },
     { path: '/regulatory', label: 'Regulatory Authority' },
   ];
 
   // Add role-specific navigation
   if (user?.role === 'PRODUCER') {
     navLinks.push({ path: '/producer', label: 'Producer Dashboard' });
+  }
+  
+  if (user?.role === 'BUYER') {
+    navLinks.push({ path: '/buyer', label: 'Buyer Dashboard' });
   }
   
   if (user?.role === 'VERIFIER') {
@@ -99,8 +104,14 @@ const Header: React.FC = () => {
                   <p className="text-sm font-medium text-gray-900">
                     {BlockchainUtils.shortenAddress(account)}
                   </p>
-                  <p className="text-xs text-red-500">Not registered</p>
+                  <p className="text-xs text-red-500">Choose your role to continue</p>
                 </div>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="px-3 py-1 bg-blue-600 text-white text-xs rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  Select Role
+                </button>
                 <button
                   onClick={disconnect}
                   className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
@@ -110,9 +121,12 @@ const Header: React.FC = () => {
                 </button>
               </div>
             ) : (
-              <div className="text-sm text-gray-500">
-                Connect wallet to get started
-              </div>
+              <button
+                onClick={connectWallet}
+                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+              >
+                Connect Wallet
+              </button>
             )}
           </div>
         </div>

@@ -54,20 +54,26 @@ class InMemorySubmission {
 
   // Create a new submission
   async create(submissionData) {
-    const id = this.nextId++;
+    const id = this.nextId.toString();
+    this.nextId++;
+    
+    // Remove price field and calculate credits based on quantity
+    const { price, ...dataWithoutPrice } = submissionData;
+    const quantity = parseFloat(submissionData.productionData?.quantity) || 0;
+    const credits = parseFloat((quantity / 100).toFixed(2)); // 100 kg = 1 credit, 2 decimal places
+    
+    console.log('Credit calculation:', { quantity, credits, formula: 'quantity/100' });
+    
     const submission = {
-      _id: id.toString(),
-      producerId: submissionData.producerId,
-      status: submissionData.status || 'PENDING',
-      productionData: submissionData.productionData,
-      price: submissionData.price,
-      tokenId: submissionData.tokenId || null,
+      _id: id,
+      ...dataWithoutPrice,
+      credits: credits,
       createdAt: new Date(),
       updatedAt: new Date()
     };
     
-    this.submissions.set(id.toString(), submission);
-    this.saveToStorage(); // Persist changes
+    this.submissions.set(id, submission);
+    this.saveToStorage(); // Save changes persistently
     console.log('InMemory: Submission created:', submission._id);
     return submission;
   }
@@ -89,15 +95,42 @@ class InMemorySubmission {
   async find(query = {}) {
     const submissions = Array.from(this.submissions.values());
     
+    // Debug logging for producer queries
+    if (query.producerId) {
+      console.log('InMemorySubmission.find - Looking for producerId:', query.producerId);
+      const filtered = submissions.filter(submission => submission.producerId === query.producerId);
+      console.log('InMemorySubmission.find - Found submissions:', filtered.map(s => ({
+        id: s._id,
+        producerId: s.producerId,
+        credits: s.credits,
+        quantity: s.productionData?.quantity
+      })));
+      return filtered;
+    }
+    
     if (query.status) {
       return submissions.filter(submission => submission.status === query.status);
     }
     
-    if (query.producerId) {
-      return submissions.filter(submission => submission.producerId === query.producerId);
+    return submissions;
+  }
+
+  async findOne(query = {}) {
+    const submissions = Array.from(this.submissions.values());
+    
+    if (query.creditId) {
+      return submissions.find(submission => submission.creditId === query.creditId) || null;
     }
     
-    return submissions;
+    if (query._id) {
+      return this.submissions.get(query._id.toString()) || null;
+    }
+    
+    if (query.producerId) {
+      return submissions.find(submission => submission.producerId === query.producerId) || null;
+    }
+    
+    return submissions[0] || null;
   }
 
   // Mock populate method for compatibility

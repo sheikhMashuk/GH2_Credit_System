@@ -5,20 +5,20 @@
       {
         "_id": "1",
         "producerId": "2",
-        "status": "APPROVED",
         "productionData": {
-          "productionDate": "2025-08-07",
-          "quantity": 1,
-          "location": "1",
-          "additionalNotes": "df"
+          "productionDate": "2025-08-01",
+          "quantity": 1111,
+          "location": "sda",
+          "additionalNotes": "aaaa"
         },
-        "price": "1",
-        "tokenId": "9071",
-        "createdAt": "2025-08-30T13:27:34.453Z",
-        "updatedAt": "2025-08-30T13:45:58.819Z",
+        "status": "APPROVED",
+        "credits": 0,
+        "createdAt": "2025-08-30T20:29:23.861Z",
+        "updatedAt": "2025-08-31T01:29:23.640Z",
+        "creditId": "6048",
         "verifiedBy": "1",
-        "verifiedAt": "2025-08-30T13:45:58.819Z",
-        "transactionHash": "0x4017bdf0fb8a4"
+        "verifiedAt": "2025-08-30T20:29:33.789Z",
+        "listedCredits": 11.11
       }
     ],
     [
@@ -26,20 +26,19 @@
       {
         "_id": "2",
         "producerId": "2",
-        "status": "APPROVED",
         "productionData": {
-          "productionDate": "2025-08-08",
-          "quantity": 22,
+          "productionDate": "2025-08-02",
+          "quantity": 1100,
           "location": "rajkot",
-          "additionalNotes": "asfrsef"
+          "additionalNotes": "asd"
         },
-        "price": "214",
-        "tokenId": "9102",
-        "createdAt": "2025-08-30T13:52:03.408Z",
-        "updatedAt": "2025-08-30T13:52:30.685Z",
+        "status": "REJECTED",
+        "credits": 0,
+        "createdAt": "2025-08-30T20:38:56.497Z",
+        "updatedAt": "2025-08-31T01:29:23.644Z",
         "verifiedBy": "1",
-        "verifiedAt": "2025-08-30T13:52:30.685Z",
-        "transactionHash": "0x064c6df17cf8c"
+        "verifiedAt": "2025-08-30T20:39:17.574Z",
+        "listedCredits": 11
       }
     ],
     [
@@ -47,22 +46,167 @@
       {
         "_id": "3",
         "producerId": "2",
-        "status": "REJECTED",
         "productionData": {
-          "productionDate": "2025-08-20",
-          "quantity": 33,
+          "productionDate": "2025-08-07",
+          "quantity": 1000,
           "location": "rajkot",
-          "additionalNotes": "jsbdkgfbh"
+          "additionalNotes": "asdd"
         },
-        "price": "5",
-        "tokenId": null,
-        "createdAt": "2025-08-30T14:14:29.094Z",
-        "updatedAt": "2025-08-30T14:14:36.353Z",
+        "status": "APPROVED",
+        "credits": 4.4399999999999995,
+        "createdAt": "2025-08-30T20:39:42.317Z",
+        "updatedAt": "2025-08-31T01:29:23.651Z",
+        "creditId": "9820",
         "verifiedBy": "1",
-        "verifiedAt": "2025-08-30T14:14:36.353Z",
-        "rejectionReason": "No reason provided"
+        "verifiedAt": "2025-08-30T20:44:53.527Z",
+        "listedCredits": 5.5600000000000005
+      }
+    ],
+    [
+      "4",
+      {
+        "_id": "4",
+        "producerId": "2",
+        "productionData": {
+          "productionDate": "2025-08-05",
+          "quantity": 1000,
+          "location": "sds",
+          "additionalNotes": ""
+        },
+        "status": "APPROVED",
+        "credits": 10,
+        "createdAt": "2025-08-30T21:11:53.490Z",
+        "updatedAt": "2025-08-30T21:12:01.905Z",
+        "producer": {
+          "id": "2",
+          "name": "User 0x2dA7...e0aC",
+          "walletAddress": "0x2da70255e14c94791c31150fcf4342a977abe0ac"
+        },
+        "creditId": "5903",
+        "verifiedBy": "1",
+        "verifiedAt": "2025-08-30T21:12:01.905Z"
+      }
+    ],
+    [
+      "5",
+      {
+        "_id": "5",
+        "producerId": "2",
+        "productionData": {
+          "productionDate": "2025-08-21",
+          "quantity": 1000,
+          "location": "sds",
+          "additionalNotes": ""
+        },
+        "status": "APPROVED",
+        "credits": 10,
+        "createdAt": "2025-08-30T21:26:28.054Z",
+        "updatedAt": "2025-08-30T21:26:37.373Z",
+        "creditId": "1794",
+        "verifiedBy": "1",
+        "verifiedAt": "2025-08-30T21:26:37.373Z"
+      }
+    ],
+    [
+      "6",
+      {
+        "_id": "6",
+        "producerId": "2",
+        "productionData": {
+          "productionDate": "2025-08-01",
+          "quantity": 1123,
+          "location": "sadf",
+          "additionalNotes": ""
+        },
+        "status": "APPROVED",
+        "credits": 11.23,
+        "createdAt": "2025-08-30T21:27:30.406Z",
+        "updatedAt": "2025-08-30T21:27:35.376Z",
+        "creditId": "2028",
+        "verifiedBy": "1",
+        "verifiedAt": "2025-08-30T21:27:35.376Z"
+      }
+    ],
+    [
+      "7",
+      {
+        "_id": "7",
+        "producerId": "2",
+        "productionData": {
+          "productionDate": "2025-08-06",
+          "quantity": 22222,
+          "location": "dfs",
+          "additionalNotes": ""
+        },
+        "status": "APPROVED",
+        "credits": 222.22,
+        "createdAt": "2025-08-30T21:33:06.060Z",
+        "updatedAt": "2025-08-30T21:33:11.809Z",
+        "creditId": "9703",
+        "verifiedBy": "1",
+        "verifiedAt": "2025-08-30T21:33:11.809Z"
+      }
+    ],
+    [
+      "8",
+      {
+        "_id": "8",
+        "producerId": "2",
+        "productionData": {
+          "productionDate": "2025-08-14",
+          "quantity": 111,
+          "location": "wf",
+          "additionalNotes": ""
+        },
+        "status": "APPROVED",
+        "credits": 1.11,
+        "createdAt": "2025-08-30T21:40:12.738Z",
+        "updatedAt": "2025-08-30T21:40:21.659Z",
+        "creditId": "8798",
+        "verifiedBy": "1",
+        "verifiedAt": "2025-08-30T21:40:21.658Z"
+      }
+    ],
+    [
+      "9",
+      {
+        "_id": "9",
+        "producerId": "4",
+        "productionData": {
+          "productionDate": "2025-08-14",
+          "quantity": 1000,
+          "location": "asf",
+          "additionalNotes": "as"
+        },
+        "status": "APPROVED",
+        "credits": 10,
+        "createdAt": "2025-08-30T21:51:12.048Z",
+        "updatedAt": "2025-08-30T21:51:23.644Z",
+        "creditId": "9460",
+        "verifiedBy": "1",
+        "verifiedAt": "2025-08-30T21:51:23.643Z"
+      }
+    ],
+    [
+      "10",
+      {
+        "_id": "10",
+        "producerId": "4",
+        "productionData": {
+          "productionDate": "2025-08-08",
+          "quantity": 1232,
+          "location": "dsf",
+          "additionalNotes": ""
+        },
+        "status": "APPROVED",
+        "credits": 12.32,
+        "createdAt": "2025-08-30T22:01:47.456Z",
+        "updatedAt": "2025-08-30T22:01:56.616Z",
+        "creditId": "2070",
+        "verifiedBy": "1",
+        "verifiedAt": "2025-08-30T22:01:56.616Z"
       }
     ]
   ],
-  "nextId": 4
+  "nextId": 11
 }

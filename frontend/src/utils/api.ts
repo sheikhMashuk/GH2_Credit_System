@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { User, Submission, MarketplaceListing } from '../types';
+import { User, Submission, CreditListing } from '../types';
 
 // Force API URL to port 5000 since backend runs there
 const API_BASE_URL = 'http://localhost:5000';
@@ -53,8 +53,9 @@ api.interceptors.response.use(
 
 export class ApiService {
   // User endpoints
-  static async signUp(name: string, walletAddress: string): Promise<User> {
-    const response = await api.post('/api/users/signup', { name, walletAddress });
+  static async signUp(name: string, walletAddress: string, role: 'PRODUCER' | 'BUYER'): Promise<User> {
+    const response = await api.post('/api/users/signup', { name, walletAddress, role });
+    console.log('API signUp response:', response.data);
     return response.data.user;
   }
 
@@ -81,12 +82,10 @@ export class ApiService {
 
   // Submission endpoints
   static async createSubmission(
-    productionData: any,
-    price: number
+    productionData: any
   ): Promise<Submission> {
     const response = await api.post('/api/submissions', {
-      productionData,
-      price,
+      productionData
     });
     return response.data.submission;
   }
@@ -123,20 +122,52 @@ export class ApiService {
     return Array.isArray(response.data) ? response.data : response.data.submissions || [];
   }
 
-  // Marketplace endpoints
-  static async getMarketplaceListings(): Promise<MarketplaceListing[]> {
-    const response = await api.get('/api/marketplace');
-    return response.data.listings;
+  // Credit endpoints
+  static async getApprovedCredits(): Promise<CreditListing[]> {
+    const response = await api.get('/api/credits');
+    return response.data.credits;
   }
 
-  static async getListingDetails(tokenId: string): Promise<MarketplaceListing> {
-    const response = await api.get(`/api/marketplace/${tokenId}`);
-    return response.data.listing;
+  static async getCreditDetails(creditId: string): Promise<CreditListing> {
+    const response = await api.get(`/api/credits/${creditId}`);
+    return response.data.credit;
   }
 
+  // Get marketplace statistics
   static async getMarketplaceStats(): Promise<any> {
-    const response = await api.get('/api/marketplace/stats');
-    return response.data.stats;
+    const response = await api.get('/api/credits/stats');
+    return response.data;
+  }
+
+  // Marketplace methods
+  static async getMarketplaceListings(): Promise<any> {
+    const response = await api.get('/api/marketplace/listings');
+    return response.data;
+  }
+
+  static async createMarketplaceListing(listingData: any): Promise<any> {
+    const response = await api.post('/api/marketplace/listings', listingData);
+    return response.data;
+  }
+
+  static async getMyListings(): Promise<any> {
+    const response = await api.get('/api/marketplace/my-listings');
+    return response.data;
+  }
+
+  static async purchaseCredits(purchaseData: { 
+    listingId: string; 
+    quantity: number; 
+    transactionHash?: string; 
+    paymentAmount?: string; 
+  }): Promise<any> {
+    const response = await api.post('/api/marketplace/purchase', purchaseData);
+    return response.data;
+  }
+
+  static async getTransactionHistory(params?: any): Promise<any> {
+    const response = await api.get('/api/marketplace/transactions', { params });
+    return response.data;
   }
 
   static async getConnectionStatus(): Promise<any> {

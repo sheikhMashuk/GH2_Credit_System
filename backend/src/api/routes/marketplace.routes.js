@@ -1,130 +1,42 @@
 const express = require('express');
-const blockchainService = require('../../services/blockchain.service');
+const marketplaceController = require('../controllers/marketplace.controller');
+const { authenticateToken } = require('../../middleware/auth');
 
 const router = express.Router();
 
 /**
- * @route GET /api/marketplace
+ * @route POST /api/marketplace/listings
+ * @desc Create a new marketplace listing (Producer only)
+ * @access Private (Producer)
+ */
+router.post('/listings', authenticateToken, marketplaceController.createListing);
+
+/**
+ * @route GET /api/marketplace/listings
  * @desc Get all active marketplace listings
  * @access Public
  */
-router.get('/', async (req, res) => {
-  try {
-    console.log('Fetching marketplace listings...');
-    
-    const listings = await blockchainService.getActiveListings();
-    
-    res.json({
-      message: 'Marketplace listings fetched successfully',
-      count: listings.length,
-      listings
-    });
-
-  } catch (error) {
-    console.error('Error fetching marketplace listings:', error);
-    res.status(500).json({
-      error: 'Internal server error',
-      message: 'Failed to fetch marketplace listings'
-    });
-  }
-});
+router.get('/listings', marketplaceController.getActiveListings);
 
 /**
- * @route GET /api/marketplace/:tokenId
- * @desc Get specific listing details
- * @access Public
+ * @route GET /api/marketplace/my-listings
+ * @desc Get producer's marketplace listings
+ * @access Private (Producer)
  */
-router.get('/:tokenId', async (req, res) => {
-  try {
-    const { tokenId } = req.params;
-    
-    if (!tokenId || isNaN(tokenId)) {
-      return res.status(400).json({
-        error: 'Invalid token ID',
-        message: 'Token ID must be a valid number'
-      });
-    }
-
-    const listing = await blockchainService.getListing(tokenId);
-    
-    res.json({
-      message: 'Listing details fetched successfully',
-      listing
-    });
-
-  } catch (error) {
-    console.error(`Error fetching listing for token ${req.params.tokenId}:`, error);
-    res.status(500).json({
-      error: 'Internal server error',
-      message: 'Failed to fetch listing details'
-    });
-  }
-});
+router.get('/my-listings', authenticateToken, marketplaceController.getMyListings);
 
 /**
- * @route GET /api/marketplace/stats
- * @desc Get marketplace statistics
- * @access Public
+ * @route POST /api/marketplace/purchase
+ * @desc Purchase credits from marketplace (Buyer only)
+ * @access Private (Buyer)
  */
-router.get('/stats', async (req, res) => {
-  try {
-    const totalSupply = await blockchainService.getTotalSupply();
-    const activeListings = await blockchainService.getActiveListings();
-    
-    // Calculate basic stats
-    const totalActiveListings = activeListings.length;
-    const totalSold = totalSupply - totalActiveListings;
-    
-    let totalValue = 0;
-    let averagePrice = 0;
-    
-    if (activeListings.length > 0) {
-      totalValue = activeListings.reduce((sum, listing) => sum + parseFloat(listing.price), 0);
-      averagePrice = totalValue / activeListings.length;
-    }
-
-    res.json({
-      message: 'Marketplace statistics fetched successfully',
-      stats: {
-        totalSupply,
-        totalActiveListings,
-        totalSold,
-        totalValue: totalValue.toFixed(4),
-        averagePrice: averagePrice.toFixed(4),
-        currency: 'MATIC'
-      }
-    });
-
-  } catch (error) {
-    console.error('Error fetching marketplace stats:', error);
-    res.status(500).json({
-      error: 'Internal server error',
-      message: 'Failed to fetch marketplace statistics'
-    });
-  }
-});
+router.post('/purchase', authenticateToken, marketplaceController.purchaseCredits);
 
 /**
- * @route GET /api/marketplace/connection/status
- * @desc Check blockchain connection status
+ * @route GET /api/marketplace/transactions
+ * @desc Get public transaction history
  * @access Public
  */
-router.get('/connection/status', async (req, res) => {
-  try {
-    const status = await blockchainService.getConnectionStatus();
-    
-    res.json({
-      message: 'Connection status retrieved successfully',
-      blockchain: status
-    });
-
-  } catch (error) {
-    console.error('Error checking connection status:', error);
-    res.status(500).json({
-      error: 'Internal server error',
-      message: 'Failed to check connection status'
-    });
-  }
-});
+router.get('/transactions', marketplaceController.getTransactionHistory);
 
 module.exports = router;

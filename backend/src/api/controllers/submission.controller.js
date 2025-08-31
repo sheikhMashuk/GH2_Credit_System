@@ -17,22 +17,32 @@ class SubmissionController {
     try {
       console.log('Creating submission with data:', req.body);
       console.log('Authenticated user:', req.user);
-      const { productionData, price } = req.body;
+      const { productionData } = req.body;
 
       // Validate input
-      if (!productionData || !price) {
-        console.log('Missing required fields:', { productionData, price });
+      if (!productionData) {
+        console.log('Missing required fields:', { productionData });
         return res.status(400).json({
           error: 'Missing required fields',
-          message: 'productionData and price are required'
+          message: 'productionData is required'
         });
       }
 
-      if (price <= 0) {
-        console.log('Invalid price:', price);
+      // Validate production data fields
+      if (!productionData.quantity || !productionData.location || !productionData.productionDate) {
+        console.log('Missing production data fields:', productionData);
         return res.status(400).json({
-          error: 'Invalid price',
-          message: 'Price must be greater than 0'
+          error: 'Missing production data fields',
+          message: 'quantity, location, and productionDate are required'
+        });
+      }
+
+      const quantity = parseFloat(productionData.quantity);
+      if (isNaN(quantity) || quantity <= 0) {
+        console.log('Invalid quantity:', productionData.quantity);
+        return res.status(400).json({
+          error: 'Invalid quantity',
+          message: 'Quantity must be a valid number greater than 0'
         });
       }
 
@@ -46,11 +56,10 @@ class SubmissionController {
         });
       }
 
-      // Create submission with proper user ID
+      // Create submission with proper user ID (no price field)
       const submission = await SubmissionModel.create({
         producerId: producer._id,
         productionData,
-        price: price.toString(),
         status: 'PENDING'
       });
 
@@ -62,6 +71,7 @@ class SubmissionController {
       };
 
       console.log('New submission created:', submission._id, 'by producer:', producer.name);
+      console.log('Calculated credits:', submission.credits, 'for quantity:', productionData.quantity, 'kg');
       console.log('Total submissions in store:', SubmissionModel.getAll().length);
 
       res.status(201).json({
@@ -70,7 +80,7 @@ class SubmissionController {
           id: submission._id,
           status: submission.status,
           productionData: submission.productionData,
-          price: submission.price,
+          credits: submission.credits,
           createdAt: submission.createdAt,
           producer: submission.producer
         }
@@ -106,7 +116,7 @@ class SubmissionController {
           id: submission._id,
           status: submission.status,
           productionData: submission.productionData,
-          price: submission.price,
+          credits: submission.credits,
           createdAt: submission.createdAt,
           producer: submission.producerId
         }))
@@ -161,50 +171,105 @@ class SubmissionController {
       let updatedSubmission;
       
       if (newStatus === 'APPROVED') {
-        // Mint NFT on blockchain for approved submissions
-        console.log('Minting NFT for submission:', submission._id);
-        const mintResult = await blockchainService.mintHydrogenCredit(
-          submission.productionData,
-          submission.price
-        );
-
-        if (!mintResult.success) {
-          return res.status(500).json({
-            error: 'Blockchain error',
-            message: 'Failed to mint NFT on blockchain'
+        // Get producer info for credit generation
+        const producer = await UserModel.findById(submission.producerId);
+        if (!producer) {
+          return res.status(404).json({
+            error: 'Producer not found',
+            message: 'Cannot generate credits - producer not found'
           });
         }
 
-        // Update submission with approval and NFT details
+        // Generate credits on blockchain for approved submissions with IPFS update
+        console.log('Generating credits for submission:', submission._id, 'for producer:', producer.walletAddress);
+        
+        // Add producer wallet address to production data for credit generation
+        const productionDataWithProducer = {
+          ...submission.productionData,
+          producerAddress: producer.walletAddress
+        };
+        
+        // Create submission data for IPFS storage
+        const submissionForIPFS = {
+          ...submission,
+          producerId: producer.walletAddress,
+          producerName: producer.name
+        };
+        
+        const creditResult = await blockchainService.generateCreditsOnChain(
+          producer.walletAddress,
+          submission.productionData.quantity,
+          submission.productionData.location,
+          submission.productionData.productionDate,
+          submissionForIPFS
+        );
+
+        if (!creditResult.success) {
+          return res.status(500).json({
+            error: 'Blockchain error',
+            message: 'Failed to generate credits on blockchain'
+          });
+        }
+
+        // Update submission with approval and credit details
         updatedSubmission = await SubmissionModel.findByIdAndUpdate(
           req.params.id,
           {
             status: 'APPROVED',
-            tokenId: mintResult.tokenId,
+            creditId: creditResult.creditId,
+            credits: creditResult.credits,
             verifiedBy: verifier._id,
             verifiedAt: new Date()
           },
           { new: true }
         );
 
-        console.log('Submission approved and NFT minted:', {
-          submissionId: updatedSubmission._id,
-          tokenId: mintResult.tokenId,
-          verifier: verifier.name
-        });
+        // Update producer's total credits and trigger IPFS sync
+        const submissionProducer = await UserModel.findById(submission.producerId);
+        if (submissionProducer) {
+          const currentCredits = submissionProducer.totalCredits || 0;
+          const newTotalCredits = currentCredits + creditResult.credits;
+          
+          await UserModel.findByIdAndUpdate(
+            submission.producerId,
+            { totalCredits: newTotalCredits }
+          );
+          
+          console.log(`Updated producer ${submissionProducer.name} total credits: ${currentCredits} + ${creditResult.credits} = ${newTotalCredits}`);
+          
+          // Trigger IPFS update for all producer's credits after credit change
+          try {
+            const allProducerSubmissions = await SubmissionModel.find({ 
+              producerId: submission.producerId, 
+              status: 'APPROVED' 
+            });
+            
+            await blockchainService.updateAllCreditsIPFS(
+              submissionProducer.walletAddress, 
+              allProducerSubmissions
+            );
+            
+            console.log(`IPFS synchronized for producer ${submissionProducer.walletAddress} after credit update`);
+          } catch (ipfsError) {
+            console.warn('Failed to sync IPFS after credit update:', ipfsError.message);
+          }
+        }
 
         res.json({
-          message: 'Submission approved and NFT minted successfully',
+          message: 'Submission approved and credits generated successfully',
           submission: {
             id: updatedSubmission._id,
             status: updatedSubmission.status,
-            tokenId: updatedSubmission.tokenId,
+            creditId: updatedSubmission.creditId,
+            credits: updatedSubmission.credits,
             verifiedBy: verifier.name,
             verifiedAt: updatedSubmission.verifiedAt
           },
-          nft: {
-            tokenId: mintResult.tokenId,
-            transactionHash: mintResult.transactionHash
+          creditInfo: {
+            creditId: creditResult.creditId,
+            quantity: creditResult.quantity,
+            credits: creditResult.credits,
+            transactionHash: creditResult.transactionHash
           }
         });
 
@@ -272,12 +337,19 @@ class SubmissionController {
           walletAddress: req.user.walletAddress
         };
 
+        console.log('Producer submission mapping:', {
+          id: submission._id,
+          status: submission.status,
+          credits: submission.credits,
+          quantity: submission.productionData?.quantity
+        });
+
         return {
           id: submission._id,
           status: submission.status,
           productionData: submission.productionData,
-          price: submission.price,
-          tokenId: submission.tokenId,
+          credits: submission.credits || 0,
+          creditId: submission.creditId,
           createdAt: submission.createdAt,
           updatedAt: submission.updatedAt,
           producer: producer
@@ -325,8 +397,8 @@ class SubmissionController {
           _id: submission._id,
           status: submission.status,
           productionData: submission.productionData,
-          price: submission.price,
-          tokenId: submission.tokenId,
+          credits: submission.credits,
+          creditId: submission.creditId,
           createdAt: submission.createdAt,
           updatedAt: submission.updatedAt,
           producer: producer ? {
@@ -374,12 +446,19 @@ class SubmissionController {
           walletAddress: user.walletAddress
         };
 
+        console.log('getMySubmissions mapping:', {
+          id: submission._id,
+          status: submission.status,
+          credits: submission.credits,
+          quantity: submission.productionData?.quantity
+        });
+
         return {
           id: submission._id,
           status: submission.status,
           productionData: submission.productionData,
-          price: submission.price,
-          tokenId: submission.tokenId,
+          credits: submission.credits || 0,
+          creditId: submission.creditId,
           createdAt: submission.createdAt,
           updatedAt: submission.updatedAt,
           producer: producer

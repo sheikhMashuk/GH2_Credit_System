@@ -1,22 +1,38 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import toast from 'react-hot-toast';
-import { User, AuthContextType } from '../types';
+import { User } from '../types';
 import { ApiService } from '../utils/api';
-import { BlockchainUtils, BLOCKCHAIN_CONFIG } from '../utils/blockchain';
+import { BlockchainUtils } from '../utils/blockchain';
+
+const BLOCKCHAIN_CONFIG = {
+  chainId: 11155111, // Sepolia testnet
+};
+
+export interface AuthContextType {
+  account: string | null;
+  provider: any;
+  signer: any;
+  user: User | null;
+  isConnecting: boolean;
+  needsRoleSelection: boolean;
+  connectWallet: () => Promise<void>;
+  disconnect: () => void;
+  signUp: (name?: string, role?: 'PRODUCER' | 'BUYER') => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => void;
+}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-interface AuthProviderProps {
-  children: React.ReactNode;
-}
-
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [account, setAccount] = useState<string | null>(null);
-  const [provider, setProvider] = useState<ethers.providers.Web3Provider | null>(null);
-  const [signer, setSigner] = useState<ethers.Signer | null>(null);
+  const [provider, setProvider] = useState<any>(null);
+  const [signer, setSigner] = useState<any>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [needsRoleSelection, setNeedsRoleSelection] = useState(false);
+  const [isSigningUp, setIsSigningUp] = useState(false);
 
   // Check if wallet is already connected or JWT token exists on component mount
   useEffect(() => {
@@ -27,7 +43,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Only check wallet connection if no JWT token was found
       const token = localStorage.getItem('authToken');
       if (!token) {
-        checkConnection();
+        // Don't auto-check connection - let user manually connect
+        console.log('AuthContext - No JWT token, waiting for manual wallet connection');
       }
     };
     
@@ -47,41 +64,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   }, []);
 
-  // Fetch user data when account changes (only for wallet-based auth)
+  // Don't auto-fetch user data - let manual role selection happen first
   useEffect(() => {
-    if (account && !localStorage.getItem('authToken')) {
-      fetchUserData(account);
-    } else if (!account && !localStorage.getItem('authToken')) {
+    if (!account && !localStorage.getItem('authToken')) {
       setUser(null);
+      setNeedsRoleSelection(false);
     }
   }, [account]);
 
-  const checkConnection = async () => {
-    if (typeof window.ethereum !== 'undefined') {
-      try {
-        const web3Provider = new ethers.providers.Web3Provider(window.ethereum);
-        const accounts = await web3Provider.listAccounts();
-        
-        if (accounts.length > 0) {
-          const network = await web3Provider.getNetwork();
-          
-          if (network.chainId !== BLOCKCHAIN_CONFIG.chainId) {
-            console.warn('Wrong network detected');
-            return;
-          }
-
-          setProvider(web3Provider);
-          setSigner(web3Provider.getSigner());
-          setAccount(accounts[0]);
-          
-          // Store wallet address for API authentication
-          localStorage.setItem('walletAddress', accounts[0]);
-        }
-      } catch (error) {
-        console.error('Error checking wallet connection:', error);
-      }
-    }
-  };
 
   const checkJWTToken = async () => {
     const token = localStorage.getItem('authToken');
@@ -121,12 +111,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const handleAccountsChanged = (accounts: string[]) => {
+  const handleAccountsChanged = async (accounts: string[]) => {
     // Only handle account changes if not using JWT auth
     if (!localStorage.getItem('authToken')) {
       if (accounts.length > 0) {
         setAccount(accounts[0]);
         localStorage.setItem('walletAddress', accounts[0]);
+        
+        // Check if new account needs role selection
+        try {
+          const userData = await ApiService.getUserByWallet(accounts[0]);
+          setUser(userData);
+          setNeedsRoleSelection(false);
+        } catch (error: any) {
+          if (error.response?.status === 404) {
+            console.log('AuthContext - Account changed to new user, showing role selection');
+            setUser(null);
+            setNeedsRoleSelection(true);
+          }
+        }
       } else {
         disconnect();
       }
@@ -178,6 +181,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.setItem('walletAddress', accounts[0]);
 
       toast.success('Wallet connected successfully!');
+      
+      // Check if user exists, if not show role selection
+      try {
+        const userData = await ApiService.getUserByWallet(accounts[0]);
+        console.log('AuthContext - Existing user found:', userData);
+        setUser(userData);
+        setNeedsRoleSelection(false);
+      } catch (error: any) {
+        if (error.response?.status === 404) {
+          console.log('AuthContext - New wallet, showing role selection');
+          setUser(null);
+          setNeedsRoleSelection(true);
+        } else {
+          console.error('Error checking user:', error);
+        }
+      }
+      
     } catch (error: any) {
       console.error('Error connecting wallet:', error);
       if (error.code === 4001) {
@@ -200,45 +220,53 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     toast.success('Wallet disconnected');
   };
 
-  const fetchUserData = async (walletAddress: string) => {
-    try {
-      const userData = await ApiService.getUserByWallet(walletAddress);
-      console.log('AuthContext - Fetched user data:', userData);
-      setUser(userData);
-    } catch (error: any) {
-      if (error.response?.status === 404) {
-        // User doesn't exist, they need to sign up
-        console.log('AuthContext - User not found, needs signup');
-        setUser(null);
-      } else {
-        console.error('Error fetching user data:', error);
-        toast.error('Failed to fetch user data');
-      }
-    }
-  };
 
-  const signUp = async (name?: string) => {
+  const signUp = async (name?: string, role?: 'PRODUCER' | 'BUYER') => {
     if (!account) {
       toast.error('Please connect your wallet first');
       return;
     }
 
+    if (isSigningUp) {
+      console.log('Signup already in progress, ignoring duplicate request');
+      return;
+    }
+
+    setIsSigningUp(true);
+    
     try {
-      // Pass name if provided, otherwise backend will auto-generate from wallet address
-      const newUser = await ApiService.signUp(name || '', account);
+      console.log('AuthContext - Creating user with role:', role, 'name:', name);
+      
+      // First check if user already exists
+      try {
+        const existingUser = await ApiService.getUserByWallet(account);
+        console.log('AuthContext - User already exists:', existingUser);
+        setUser(existingUser);
+        setNeedsRoleSelection(false);
+        toast.success('Welcome back!');
+        return;
+      } catch (error: any) {
+        if (error.response?.status !== 404) {
+          throw error; // Re-throw if it's not a "user not found" error
+        }
+        // User doesn't exist, continue with signup
+      }
+      
+      // Create new user with selected role - role is required
+      if (!role) {
+        toast.error('Please select a role before registering');
+        return;
+      }
+      const newUser = await ApiService.signUp(name || '', account, role);
       console.log('AuthContext - New user created:', newUser);
       setUser(newUser);
-      toast.success('Account created successfully!');
+      setNeedsRoleSelection(false);
+      toast.success(`${role} account created successfully!`);
     } catch (error: any) {
       console.error('Error signing up:', error);
-      if (error.response?.status === 409) {
-        // User already exists, fetch their data
-        console.log('AuthContext - User exists, fetching data');
-        await fetchUserData(account);
-        toast.success('Welcome back!');
-      } else {
-        toast.error('Failed to create account. Please try again.');
-      }
+      toast.error('Failed to create account. Please try again.');
+    } finally {
+      setIsSigningUp(false);
     }
   };
 
@@ -281,6 +309,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signer,
     user,
     isConnecting,
+    needsRoleSelection,
     connectWallet,
     disconnect,
     signUp,

@@ -74,7 +74,27 @@ const Home: React.FC = () => {
                       Producer Dashboard
                     </h3>
                     <p className="text-gray-600">
-                      Submit production data, track verification status, and manage your credits.
+                      Submit production data, track verification status, and list credits for sale.
+                    </p>
+                  </Link>
+                )}
+
+                {user.role === 'BUYER' && (
+                  <Link
+                    to="/buyer"
+                    className="card-hover group text-left"
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="bg-green-100 p-3 rounded-lg">
+                        <Users className="h-6 w-6 text-green-600" />
+                      </div>
+                      <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-green-600 transition-colors" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      Buyer Dashboard
+                    </h3>
+                    <p className="text-gray-600">
+                      Browse and purchase verified green hydrogen credits from the marketplace.
                     </p>
                   </Link>
                 )}
@@ -85,10 +105,10 @@ const Home: React.FC = () => {
                     className="card-hover group text-left"
                   >
                     <div className="flex items-center justify-between mb-4">
-                      <div className="bg-green-100 p-3 rounded-lg">
-                        <Shield className="h-6 w-6 text-green-600" />
+                      <div className="bg-orange-100 p-3 rounded-lg">
+                        <Shield className="h-6 w-6 text-orange-600" />
                       </div>
-                      <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-green-600 transition-colors" />
+                      <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-orange-600 transition-colors" />
                     </div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">
                       Verifier Dashboard

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Clock, CheckCircle, XCircle, Loader, Calendar, MapPin, Scale } from 'lucide-react';
+import { Plus, CheckCircle, XCircle, Clock, DollarSign, Loader, Calendar, Scale, MapPin } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { ApiService } from '../utils/api';
 import { Submission } from '../types';
+import MarketplaceListingModal from '../components/MarketplaceListingModal';
 
 const ProducerDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -11,13 +12,13 @@ const ProducerDashboard: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [showListingModal, setShowListingModal] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
     productionDate: '',
     quantity: '',
     location: '',
-    price: '',
     additionalNotes: ''
   });
 
@@ -47,6 +48,7 @@ const ProducerDashboard: React.FC = () => {
       setIsLoading(true);
       const data = await ApiService.getMySubmissions();
       console.log('ProducerDashboard - Fetched submissions data:', data);
+      console.log('ProducerDashboard - Individual submission credits:', data.map(s => ({ id: s.id, credits: s.credits, quantity: s.productionData?.quantity })));
       setSubmissions(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching submissions:', error);
@@ -62,21 +64,15 @@ const ProducerDashboard: React.FC = () => {
     if (!user) return;
 
     // Validate form
-    if (!formData.productionDate || !formData.quantity || !formData.location || !formData.price) {
+    if (!formData.productionDate || !formData.quantity || !formData.location) {
       toast.error('Please fill in all required fields');
       return;
     }
 
     const quantity = parseFloat(formData.quantity);
-    const price = parseFloat(formData.price);
 
     if (isNaN(quantity) || quantity <= 0) {
       toast.error('Please enter a valid quantity');
-      return;
-    }
-
-    if (isNaN(price) || price <= 0) {
-      toast.error('Please enter a valid price');
       return;
     }
 
@@ -90,7 +86,7 @@ const ProducerDashboard: React.FC = () => {
         additionalNotes: formData.additionalNotes || ''
       };
 
-      await ApiService.createSubmission(productionData, price);
+      await ApiService.createSubmission(productionData);
       
       toast.success('Submission created successfully!');
       
@@ -99,7 +95,6 @@ const ProducerDashboard: React.FC = () => {
         productionDate: '',
         quantity: '',
         location: '',
-        price: '',
         additionalNotes: ''
       });
       setShowForm(false);
@@ -114,6 +109,12 @@ const ProducerDashboard: React.FC = () => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+
+  const handleListingCreated = async () => {
+    toast.success('Marketplace listing created successfully!');
+    await fetchSubmissions(); // Refresh to show updated data
   };
 
   const getStatusIcon = (status: string) => {
@@ -212,11 +213,35 @@ const ProducerDashboard: React.FC = () => {
         
         <div className="card">
           <div className="text-2xl font-bold text-purple-600 mb-1">
-            {submissions?.filter(s => s.status === 'APPROVED').reduce((sum, s) => sum + parseFloat(s.price), 0).toFixed(2) || '0.00'}
+            {submissions?.filter(s => s.status === 'APPROVED').reduce((sum, s) => sum + (s.credits || 0), 0) || 0}
           </div>
-          <div className="text-gray-600">Total Value (MATIC)</div>
+          <div className="text-gray-600">Total Credits</div>
         </div>
       </div>
+
+      {/* List Credits for Sale Section */}
+      {submissions?.filter(s => s.status === 'APPROVED' && (s.credits || 0) > 0).length > 0 && (
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-gray-900">Available Credits</h2>
+            <button
+              onClick={() => setShowListingModal(true)}
+              className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            >
+              <DollarSign className="h-5 w-5" />
+              <span>List Credits for Sale</span>
+            </button>
+          </div>
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <p className="text-green-800">
+              <strong>Total Available Credits:</strong> {submissions?.filter(s => s.status === 'APPROVED').reduce((sum, s) => sum + (s.credits || 0), 0) || 0} credits
+            </p>
+            <p className="text-sm text-green-600 mt-1">
+              You can list any amount of your available credits for sale in the marketplace.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Submission Form Modal */}
       {showForm && (
@@ -270,21 +295,6 @@ const ProducerDashboard: React.FC = () => {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Price (MATIC) *
-                </label>
-                <input
-                  type="number"
-                  step="0.0001"
-                  min="0"
-                  value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                  className="input-field"
-                  placeholder="Desired price in MATIC"
-                  required
-                />
-              </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -375,7 +385,11 @@ const ProducerDashboard: React.FC = () => {
                       {submission.status}
                     </span>
                     <div className="text-sm font-medium text-gray-900 mt-1">
-                      {parseFloat(submission.price).toFixed(4)} MATIC
+                      {(() => {
+                        console.log('Frontend submission credits:', submission.credits, 'for submission:', submission.id);
+                        return null;
+                      })()}
+                      {submission.credits || 0} Credits
                     </div>
                   </div>
                 </div>
@@ -397,10 +411,10 @@ const ProducerDashboard: React.FC = () => {
                   </div>
                 </div>
 
-                {submission.tokenId && (
+                {submission.creditId && (
                   <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
                     <p className="text-sm text-green-800">
-                      <strong>NFT Minted:</strong> Token ID #{submission.tokenId}
+                      <strong>Credits Generated:</strong> {submission.credits} credits (ID: #{submission.creditId})
                     </p>
                   </div>
                 )}
@@ -409,6 +423,15 @@ const ProducerDashboard: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Marketplace Listing Modal */}
+      <MarketplaceListingModal
+        isOpen={showListingModal}
+        onClose={() => setShowListingModal(false)}
+        submission={null}
+        onListingCreated={handleListingCreated}
+        totalAvailableCredits={submissions?.filter(s => s.status === 'APPROVED').reduce((sum, s) => sum + (s.credits || 0), 0) || 0}
+      />
     </div>
   );
 };

@@ -15,7 +15,7 @@ class UserController {
   async signup(req, res) {
     try {
       console.log('Signup request received:', req.body);
-      const { name, walletAddress } = req.body;
+      const { name, walletAddress, role } = req.body;
 
       // Validate input - only walletAddress is required
       if (!walletAddress) {
@@ -63,12 +63,20 @@ class UserController {
         });
       }
 
-      // Create new user
-      console.log('Creating new user with data:', { name: displayName, walletAddress: walletAddress.toLowerCase(), role: 'PRODUCER' });
+      // Create new user - role is required
+      const validRoles = ['PRODUCER', 'BUYER', 'REGULATORY_AUTHORITY'];
+      if (!role || !validRoles.includes(role)) {
+        return res.status(400).json({
+          error: 'Role is required',
+          message: 'Please specify a valid role: PRODUCER, BUYER, or REGULATORY_AUTHORITY'
+        });
+      }
+      const userRole = role;
+      console.log('Creating new user with data:', { name: displayName, walletAddress: walletAddress.toLowerCase(), role: userRole });
       const newUser = await UserModel.create({
         name: displayName,
         walletAddress: walletAddress.toLowerCase(),
-        role: 'PRODUCER' // Default role
+        role: userRole
       });
 
       console.log('New user created:', newUser._id, newUser.walletAddress);
@@ -245,10 +253,10 @@ class UserController {
       const { id } = req.params;
       const { role } = req.body;
 
-      if (!role || !['PRODUCER', 'VERIFIER'].includes(role)) {
+      if (!role || !['PRODUCER', 'BUYER', 'VERIFIER'].includes(role)) {
         return res.status(400).json({
           error: 'Invalid role',
-          message: 'Role must be either PRODUCER or VERIFIER'
+          message: 'Role must be PRODUCER, BUYER, or VERIFIER'
         });
       }
 

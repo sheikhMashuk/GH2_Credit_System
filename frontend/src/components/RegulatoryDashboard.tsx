@@ -12,8 +12,8 @@ interface Submission {
     additionalNotes?: string;
   };
   status: string;
-  price: string;
-  tokenId?: string;
+  credits: number;
+  creditId?: string;
   createdAt: string;
   updatedAt: string;
   producer?: {
@@ -100,7 +100,7 @@ const RegulatoryDashboard: React.FC = () => {
               <p><strong>Quantity:</strong> {submission.productionData.quantity} kg</p>
               <p><strong>Location:</strong> {submission.productionData.location}</p>
               <p><strong>Production Date:</strong> {new Date(submission.productionData.productionDate).toLocaleString()}</p>
-              <p><strong>Price:</strong> ${submission.price}</p>
+              <p><strong>Credits:</strong> {submission.credits}</p>
               <p><strong>Submitted By:</strong> {submission.producer?.name || 'Unknown Producer'}</p>
               <p><strong>Wallet Address:</strong> {submission.producer?.walletAddress || 'N/A'}</p>
               <p><strong>Submitted At:</strong> {new Date(submission.createdAt).toLocaleString()}</p>

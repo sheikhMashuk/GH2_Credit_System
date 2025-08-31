@@ -1,13 +1,31 @@
 const { ethers } = require('ethers');
 require('dotenv').config();
 
-// Contract ABI - Essential functions only
+// Contract ABI - Updated for credit-based system
 const CONTRACT_ABI = [
+  // Credit generation functions
+  "function generateCredits(address producer, uint256 quantity, string memory location, string memory productionDate) external returns (uint256)",
+  "function getApprovedCredits(address producer) external view returns (uint256)",
+  "function getCredit(uint256 creditId) external view returns (address producer, uint256 quantity, string memory location, string memory productionDate, bool isActive)",
+  "function getTotalCredits() external view returns (uint256)",
+  
+  // Transfer functions
+  "function transferCredits(address to, uint256 amount) external returns (bool)",
+  "function getBalance(address account) external view returns (uint256)",
+  
+  // Events
+  "event CreditGenerated(uint256 indexed creditId, address indexed producer, uint256 quantity)",
+  "event CreditTransferred(address indexed from, address indexed to, uint256 amount)",
+  
+  // Legacy NFT functions (for backward compatibility)
+  "function verifyAndMintToProducer(address producer, uint256 price, string memory tokenURI) external returns (uint256)",
   "function verifyAndMintToListing(address producer, uint256 price, string memory tokenURI) external",
+  "function buyCredit(uint256 tokenId) external payable",
   "function getActiveListings() external view returns (uint256[] memory tokenIds, address[] memory producers, uint256[] memory prices)",
   "function getListing(uint256 tokenId) external view returns (address producer, uint256 price, bool isActive)",
   "function totalSupply() external view returns (uint256)",
   "function tokenURI(uint256 tokenId) external view returns (string memory)",
+  "function ownerOf(uint256 tokenId) external view returns (address)",
   "event CreditListed(uint256 indexed tokenId, address indexed producer, uint256 price)",
   "event CreditSold(uint256 indexed tokenId, address indexed buyer, address indexed producer)"
 ];

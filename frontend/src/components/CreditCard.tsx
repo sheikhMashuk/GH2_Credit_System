@@ -3,7 +3,7 @@ import { ShoppingCart, Loader, Calendar, MapPin, Scale, ExternalLink } from 'luc
 import toast from 'react-hot-toast';
 import { MarketplaceListing } from '../types';
 import { useAuth } from '../context/AuthContext';
-import { BlockchainUtils } from '../utils/blockchain';
+import { ApiService } from '../utils/api';
 
 interface CreditCardProps {
   listing: MarketplaceListing;
@@ -11,16 +11,16 @@ interface CreditCardProps {
 }
 
 const CreditCard: React.FC<CreditCardProps> = ({ listing, onPurchaseSuccess }) => {
-  const { account, signer } = useAuth();
+  const { account, user } = useAuth();
   const [isPurchasing, setIsPurchasing] = useState(false);
 
   const handlePurchase = async () => {
-    if (!account || !signer) {
+    if (!account || !user) {
       toast.error('Please connect your wallet first');
       return;
     }
 
-    if (listing.producer.toLowerCase() === account.toLowerCase()) {
+    if (listing.producer.walletAddress.toLowerCase() === account.toLowerCase()) {
       toast.error('You cannot purchase your own credit');
       return;
     }
@@ -28,46 +28,101 @@ const CreditCard: React.FC<CreditCardProps> = ({ listing, onPurchaseSuccess }) =
     setIsPurchasing(true);
 
     try {
-      const contract = BlockchainUtils.getContract(signer);
-      
-      // Get current gas price
-      const gasPrice = await BlockchainUtils.getGasPrice(signer.provider!);
-      
-      // Call buyCredit function
-      const tx = await contract.buyCredit(listing.tokenId, {
-        value: listing.priceInWei,
-        gasPrice: gasPrice.mul(110).div(100), // 10% buffer
-      });
+      // Use fixed credit price: 1 credit = 0.001 ETH
+      const FIXED_PRICE_PER_CREDIT_ETH = 0.001;
+      const totalPriceETH = listing.credits * FIXED_PRICE_PER_CREDIT_ETH;
+      const priceInWei = (totalPriceETH * 1e18).toString(); // Convert ETH to wei
 
-      toast.loading('Transaction submitted. Waiting for confirmation...', {
-        duration: 0,
-        id: 'purchase-tx'
-      });
-
-      const receipt = await tx.wait();
-      
-      toast.dismiss('purchase-tx');
-      toast.success('Credit purchased successfully!');
-      
-      console.log('Purchase successful:', {
-        tokenId: listing.tokenId,
-        transactionHash: receipt.transactionHash,
-        blockNumber: receipt.blockNumber,
-      });
-
-      // Call success callback
-      if (onPurchaseSuccess) {
-        onPurchaseSuccess();
+      // Trigger MetaMask payment transaction
+      const { ethereum } = window as any;
+      if (!ethereum) {
+        toast.error('MetaMask not found. Please install MetaMask.');
+        return;
       }
 
+      // Simplified gas estimation without ethers dependency
+      // Use MetaMask's built-in gas estimation
+      let gasLimit = '0x5208'; // Default 21000 for ETH transfer
+      let gasPrice = '0x4A817C800'; // Default 20 gwei
+      
+      try {
+        // Get current gas price from MetaMask
+        const currentGasPrice = await ethereum.request({
+          method: 'eth_gasPrice'
+        });
+        
+        // Use 80% of current gas price for optimization
+        const gasPriceBigInt = BigInt(currentGasPrice);
+        const optimizedGasPrice = (gasPriceBigInt * BigInt(80)) / BigInt(100);
+        gasPrice = `0x${optimizedGasPrice.toString(16)}`;
+        
+        // Estimate gas for the transaction
+        const estimatedGas = await ethereum.request({
+          method: 'eth_estimateGas',
+          params: [{
+            to: listing.producer.walletAddress,
+            from: account,
+            value: `0x${BigInt(priceInWei).toString(16)}`
+          }]
+        });
+        
+        // Add 10% buffer to estimated gas
+        const gasLimitBigInt = (BigInt(estimatedGas) * BigInt(110)) / BigInt(100);
+        gasLimit = `0x${gasLimitBigInt.toString(16)}`;
+        
+      } catch (gasError) {
+        console.warn('Gas estimation failed, using defaults:', gasError);
+      }
+
+      // Request payment through MetaMask with optimized gas
+      const transactionParameters = {
+        to: listing.producer.walletAddress,
+        from: account,
+        value: `0x${BigInt(priceInWei).toString(16)}`,
+        gas: gasLimit,
+        gasPrice: gasPrice,
+      };
+
+      console.log('Initiating MetaMask payment:', {
+        credits: listing.credits,
+        priceETH: totalPriceETH,
+        priceWei: priceInWei,
+        to: listing.producer.walletAddress
+      });
+
+      // Show MetaMask payment prompt
+      const txHash = await ethereum.request({
+        method: 'eth_sendTransaction',
+        params: [transactionParameters],
+      });
+
+      console.log('Payment transaction sent:', txHash);
+      toast.success('Payment sent! Waiting for confirmation...');
+
+      // Wait for transaction confirmation (simplified)
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
+      // Send purchase request to backend with transaction hash and payment amount
+      await ApiService.purchaseCredits({
+        listingId: listing.id,
+        quantity: listing.credits,
+        transactionHash: txHash,
+        paymentAmount: totalPriceETH.toString()
+      });
+
+      toast.success('Credit purchased successfully with ETH payment!');
+      onPurchaseSuccess?.();
     } catch (error: any) {
-      console.error('Purchase failed:', error);
-      toast.dismiss('purchase-tx');
+      console.error('Purchase error:', error);
       
       if (error.code === 4001) {
-        toast.error('Transaction cancelled by user');
-      } else if (error.message?.includes('insufficient funds')) {
-        toast.error('Insufficient MATIC balance');
+        toast.error('Payment cancelled by user');
+      } else if (error.response?.status === 403) {
+        toast.error('Access denied. Only buyers can purchase credits.');
+      } else if (error.response?.status === 404) {
+        toast.error('Listing not found or no longer available.');
+      } else if (error.response?.status === 400) {
+        toast.error('Insufficient credits available.');
       } else {
         toast.error('Purchase failed. Please try again.');
       }
@@ -76,109 +131,102 @@ const CreditCard: React.FC<CreditCardProps> = ({ listing, onPurchaseSuccess }) =
     }
   };
 
-  const getAttributeValue = (traitType: string): string => {
-    const attribute = listing.metadata.attributes?.find(
-      attr => attr.trait_type === traitType
-    );
-    return attribute?.value || 'N/A';
+  const handleViewDetails = () => {
+    console.log('View credit details:', listing);
+  };
+
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString();
   };
 
   return (
-    <div className="card-hover animate-fade-in">
+    <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
       <div className="flex justify-between items-start mb-4">
         <div>
           <h3 className="text-lg font-semibold text-gray-900 mb-1">
-            {listing.metadata.name || `Green Hydrogen Credit #${listing.tokenId}`}
+            Green Hydrogen Credit #{listing.creditId}
           </h3>
           <p className="text-sm text-gray-600">
-            Token ID: {listing.tokenId}
+            Credit ID: {listing.creditId}
           </p>
         </div>
         <div className="text-right">
           <div className="text-2xl font-bold text-green-600">
-          {parseFloat(listing.price).toFixed(4)} ETH
-        </div>
-        <p className="text-xs text-gray-500">
-          ~${(parseFloat(listing.price) * 2500).toFixed(2)} USD
-        </p>
+            {(listing.credits * 0.001).toFixed(3)} ETH
+          </div>
+          <p className="text-xs text-gray-500">
+            ≈ ${(listing.credits * 0.001 * 2000).toFixed(2)} USD
+          </p>
         </div>
       </div>
 
-      {/* Credit Details */}
-      <div className="space-y-3 mb-6">
-        <div className="flex items-center space-x-2 text-sm text-gray-600">
-          <Calendar className="h-4 w-4" />
-          <span>Production: {getAttributeValue('Production Date')}</span>
+      <div className="space-y-3 mb-4">
+        <div className="flex items-center text-sm text-gray-600">
+          <Calendar className="w-4 h-4 mr-2" />
+          <span>Production: {formatDate(listing.productionDate)}</span>
         </div>
         
-        <div className="flex items-center space-x-2 text-sm text-gray-600">
-          <Scale className="h-4 w-4" />
-          <span>Quantity: {getAttributeValue('Quantity (kg)')} kg</span>
+        <div className="flex items-center text-sm text-gray-600">
+          <MapPin className="w-4 h-4 mr-2" />
+          <span>Location: {listing.location}</span>
         </div>
         
-        <div className="flex items-center space-x-2 text-sm text-gray-600">
-          <MapPin className="h-4 w-4" />
-          <span>Location: {getAttributeValue('Location')}</span>
+        <div className="flex items-center text-sm text-gray-600">
+          <Scale className="w-4 h-4 mr-2" />
+          <span>Quantity: {listing.quantity} kg H₂</span>
         </div>
       </div>
 
-      {/* Producer Info */}
-      <div className="bg-gray-50 rounded-lg p-3 mb-4">
-        <p className="text-xs text-gray-500 mb-1">Producer</p>
-        <p className="text-sm font-medium text-gray-900">
-          {BlockchainUtils.shortenAddress(listing.producer)}
-        </p>
-      </div>
-
-      {/* Verification Badge */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center space-x-2">
-          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-          <span className="text-sm text-green-700 font-medium">
-            Verified Credit
-          </span>
+      <div className="border-t pt-3 mb-4">
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-600">Producer:</span>
+          <span className="font-medium">{listing.producer.name}</span>
         </div>
-        <div className="text-xs text-gray-500">
-          Verified: {getAttributeValue('Verification Date')}
+        <div className="flex justify-between text-sm mt-1">
+          <span className="text-gray-600">Available Credits:</span>
+          <span className="font-medium">{listing.credits} credits</span>
+        </div>
+        <div className="flex justify-between text-sm mt-1">
+          <span className="text-gray-600">Total Value:</span>
+          <span className="font-medium text-green-600">{(listing.credits * 0.001).toFixed(3)} ETH</span>
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="flex space-x-3">
+      <div className="flex gap-2">
         <button
           onClick={handlePurchase}
-          disabled={isPurchasing || !account}
-          className="btn-success flex-1 flex items-center justify-center space-x-2"
+          disabled={isPurchasing || listing.status !== 'ACTIVE'}
+          className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
         >
           {isPurchasing ? (
             <>
-              <Loader className="h-4 w-4 animate-spin" />
-              <span>Purchasing...</span>
+              <Loader className="w-4 h-4 animate-spin" />
+              Purchasing...
             </>
           ) : (
             <>
-              <ShoppingCart className="h-4 w-4" />
-              <span>Buy Credit</span>
+              <ShoppingCart className="w-4 h-4" />
+              {listing.status === 'ACTIVE' ? 'Purchase' : 'Sold'}
             </>
           )}
         </button>
-
-        {listing.metadata.uri && (
-          <button
-            onClick={() => window.open(listing.metadata.uri, '_blank')}
-            className="btn-secondary px-3"
-            title="View Metadata"
-          >
-            <ExternalLink className="h-4 w-4" />
-          </button>
-        )}
+        
+        <button
+          onClick={handleViewDetails}
+          className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          title="View Details"
+        >
+          <ExternalLink className="w-4 h-4" />
+        </button>
       </div>
 
-      {!account && (
-        <p className="text-xs text-red-600 mt-2 text-center">
-          Connect your wallet to purchase this credit
-        </p>
-      )}
+      <div className="mt-4 pt-3 border-t">
+        <div className="text-xs text-gray-500 space-y-1">
+          <div>Listed: {formatDate(listing.listedAt)}</div>
+          <div>Status: <span className={`font-medium ${listing.status === 'ACTIVE' ? 'text-green-600' : 'text-gray-600'}`}>{listing.status}</span></div>
+        </div>
+      </div>
     </div>
   );
 };

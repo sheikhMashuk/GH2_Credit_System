@@ -64,6 +64,7 @@ class InMemoryUser {
       email: userData.email ? userData.email.toLowerCase() : undefined,
       password: userData.password ? await bcrypt.hash(userData.password, 12) : undefined,
       role: userData.role || 'PRODUCER',
+      totalCredits: 0, // Initialize total credits
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -82,11 +83,11 @@ class InMemoryUser {
       }
     }
     
-    // Use email as key for regulatory authority, wallet address for others
+    // Store user with key as email or wallet address
     const key = user.email || user.walletAddress;
     this.users.set(key, user);
-    this.saveToStorage(); // Persist changes
-    console.log('InMemory: User created:', user._id, key);
+    this.saveToStorage(); // Save changes persistently
+    console.log('InMemory: User created:', user._id);
     return user;
   }
 
@@ -139,6 +140,12 @@ class InMemoryUser {
   // Get all users for debugging
   getAll() {
     return Array.from(this.users.values());
+  }
+
+  // Find user by wallet address
+  async findByWalletAddress(walletAddress) {
+    if (!walletAddress) return null;
+    return this.users.get(walletAddress.toLowerCase()) || null;
   }
 
   // Debug method to check users by wallet address

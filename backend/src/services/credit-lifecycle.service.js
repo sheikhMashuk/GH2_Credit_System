@@ -73,7 +73,7 @@ class CreditLifecycleService {
    */
   async handleCreditTransfer(creditId, fromAddress, toAddress, amount, transferType = 'sale') {
     try {
-      console.log(`[CreditLifecycle] Processing ${transferType} for credit ${creditId}`);
+      console.log(`[CreditLifecycle] Processing ${transferType} for credit ${creditId} - BURNING ${amount} credits`);
       console.log(`[CreditLifecycle] From: ${fromAddress} To: ${toAddress} Amount: ${amount}`);
       
       // Get current credit data from database
@@ -82,63 +82,71 @@ class CreditLifecycleService {
         throw new Error(`Submission with credit ID ${creditId} not found`);
       }
       
-      // Get producer info
+      // Get producer and buyer info
       const fromProducer = await InMemoryUser.findByWalletAddress(fromAddress);
-      const toProducer = await InMemoryUser.findByWalletAddress(toAddress);
+      const toBuyer = await InMemoryUser.findByWalletAddress(toAddress);
       
-      // Create updated credit data
-      const updatedCreditData = {
+      // Create burned credit data for IPFS storage
+      const burnedCreditData = {
         version: '1.0',
-        type: 'green-hydrogen-credit',
+        type: 'green-hydrogen-credit-burned',
         creditId: creditId,
-        producer: {
+        originalProducer: {
           address: fromAddress,
           name: fromProducer?.name || 'Unknown Producer'
         },
+        buyer: {
+          address: toAddress,
+          name: toBuyer?.name || 'Unknown Buyer'
+        },
         production: submission.productionData,
-        credits: {
-          amount: submission.credits,
-          generatedAt: submission.verifiedAt,
-          approvedBy: 'regulatory-authority',
-          approvedAt: submission.verifiedAt,
-          status: transferType === 'sale' ? 'sold' : 'transferred',
-          ownership: {
-            currentOwner: toAddress,
-            previousOwner: fromAddress,
-            transferHistory: [{
-              from: fromAddress,
-              to: toAddress,
-              amount: amount,
-              type: transferType,
-              timestamp: new Date().toISOString()
-            }]
-          }
+        burnDetails: {
+          originalCredits: submission.credits,
+          creditsBurned: amount,
+          burnedAt: new Date().toISOString(),
+          burnReason: 'Credit purchase and consumption',
+          burnType: transferType,
+          purchasePrice: amount * 0.001, // Fixed price per credit in ETH
+          purchasePriceUSD: amount * 0.001 * 2000 // Assuming $2000/ETH
         },
         verification: {
           submissionId: submission._id,
-          status: 'TRANSFERRED'
+          originalStatus: submission.status,
+          burnStatus: 'BURNED_AND_CONSUMED',
+          burnedBy: toAddress,
+          burnTransaction: new Date().toISOString()
         },
         metadata: {
           createdAt: submission.createdAt,
+          burnedAt: new Date().toISOString(),
           lastUpdated: new Date().toISOString(),
-          standard: 'GH2-Credit-v1.0',
-          network: 'development'
+          standard: 'GH2-Credit-Burn-v1.0',
+          network: 'development',
+          immutable: true,
+          purpose: 'Carbon credit retirement and consumption tracking'
         }
       };
       
-      // Update IPFS with new ownership data
-      const ipfsHash = await IPFSService.updateCreditInIPFS(updatedCreditData, transferType);
+      // Store burned credit data to IPFS
+      const ipfsHash = await IPFSService.updateCreditInIPFS(burnedCreditData, `burn_${transferType}`);
       
-      console.log(`[CreditLifecycle] ✓ Credit ${creditId} ${transferType} updated in IPFS: ${ipfsHash}`);
+      if (ipfsHash) {
+        console.log(`[CreditLifecycle] ✓ Credit ${creditId} BURNED and stored in IPFS: ${ipfsHash}`);
+        console.log(`[CreditLifecycle] ✓ ${amount} credits permanently retired for buyer ${toAddress}`);
+      } else {
+        console.warn(`[CreditLifecycle] ⚠ Credit ${creditId} burned but IPFS storage failed`);
+      }
       
       return {
         success: true,
         creditId,
         ipfsHash,
-        transferType,
+        transferType: 'burn_' + transferType,
         from: fromAddress,
         to: toAddress,
-        amount
+        amount,
+        burned: true,
+        burnedAt: new Date().toISOString()
       };
       
     } catch (error) {

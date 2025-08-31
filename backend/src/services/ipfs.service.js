@@ -3,20 +3,19 @@ const FormData = require('form-data');
 
 class IPFSService {
   constructor() {
-    // Load environment variables if not already loaded
-    if (!process.env.PINATA_API_KEY) {
-      require('dotenv').config({ path: '../../.env' });
-    }
+    // Load environment variables from root directory
+    require('dotenv').config({ path: '../.env' });
     
     this.pinataApiKey = process.env.PINATA_API_KEY;
     this.pinataSecretKey = process.env.PINATA_SECRET_KEY;
     this.pinataBaseUrl = 'https://api.pinata.cloud';
     
-    console.log(`[IPFS] Pinata API Key: ${this.pinataApiKey ? 'Found' : 'Missing'}`);
-    console.log(`[IPFS] Pinata Secret Key: ${this.pinataSecretKey ? 'Found' : 'Missing'}`);
+    console.log(`[IPFS] Environment loaded from: ${process.cwd()}`);
+    console.log(`[IPFS] Pinata API Key: ${this.pinataApiKey ? 'Found (' + this.pinataApiKey.substring(0, 8) + '...)' : 'Missing'}`);
+    console.log(`[IPFS] Pinata Secret Key: ${this.pinataSecretKey ? 'Found (' + this.pinataSecretKey.substring(0, 8) + '...)' : 'Missing'}`);
     
     if (!this.pinataApiKey || !this.pinataSecretKey) {
-      console.warn('PINATA_API_KEY or PINATA_SECRET_KEY not found. IPFS features will be disabled.');
+      console.warn('[IPFS] PINATA_API_KEY or PINATA_SECRET_KEY not found. IPFS features will be disabled.');
     }
   }
 
@@ -28,27 +27,32 @@ class IPFSService {
    */
   async pinJSONToIPFS(jsonData, name) {
     if (!this.pinataApiKey || !this.pinataSecretKey) {
-      console.warn('Pinata credentials not configured - skipping IPFS upload');
+      console.warn('[IPFS] Pinata credentials not configured - skipping IPFS upload');
       return null;
     }
 
     try {
       console.log(`[IPFS] Uploading ${name} to Pinata...`);
+      console.log(`[IPFS] Data preview:`, JSON.stringify(jsonData, null, 2).substring(0, 200) + '...');
+      
+      const payload = {
+        pinataContent: jsonData,
+        pinataMetadata: {
+          name: name,
+          keyvalues: {
+            type: 'hydrogen-credit',
+            timestamp: new Date().toISOString(),
+            producer: jsonData.producer?.address || 'unknown',
+            creditId: jsonData.creditId || 'unknown'
+          }
+        }
+      };
+      
+      console.log(`[IPFS] Payload size: ${JSON.stringify(payload).length} bytes`);
       
       const response = await axios.post(
         `${this.pinataBaseUrl}/pinning/pinJSONToIPFS`,
-        {
-          pinataContent: jsonData,
-          pinataMetadata: {
-            name: name,
-            keyvalues: {
-              type: 'hydrogen-credit',
-              timestamp: new Date().toISOString(),
-              producer: jsonData.producer?.address || 'unknown',
-              creditId: jsonData.creditId || 'unknown'
-            }
-          }
-        },
+        payload,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -65,8 +69,13 @@ class IPFSService {
     } catch (error) {
       console.error('[IPFS] ✗ Error pinning to IPFS:', error.response?.data || error.message);
       console.error('[IPFS] Status:', error.response?.status);
-      console.error('[IPFS] Headers:', error.response?.headers);
-      throw new Error(`Failed to pin data to IPFS: ${error.message}`);
+      console.error('[IPFS] Request URL:', `${this.pinataBaseUrl}/pinning/pinJSONToIPFS`);
+      console.error('[IPFS] API Key (first 8 chars):', this.pinataApiKey?.substring(0, 8));
+      if (error.response?.data) {
+        console.error('[IPFS] Full error response:', JSON.stringify(error.response.data, null, 2));
+      }
+      // Return null instead of throwing to prevent breaking the flow
+      return null;
     }
   }
 

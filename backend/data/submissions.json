@@ -14,7 +14,7 @@
         "status": "APPROVED",
         "credits": 0,
         "createdAt": "2025-08-30T20:29:23.861Z",
-        "updatedAt": "2025-08-31T01:29:23.640Z",
+        "updatedAt": "2025-08-31T03:31:29.883Z",
         "creditId": "6048",
         "verifiedBy": "1",
         "verifiedAt": "2025-08-30T20:29:33.789Z",
@@ -35,7 +35,7 @@
         "status": "REJECTED",
         "credits": 0,
         "createdAt": "2025-08-30T20:38:56.497Z",
-        "updatedAt": "2025-08-31T01:29:23.644Z",
+        "updatedAt": "2025-08-31T03:31:29.885Z",
         "verifiedBy": "1",
         "verifiedAt": "2025-08-30T20:39:17.574Z",
         "listedCredits": 11
@@ -53,13 +53,13 @@
           "additionalNotes": "asdd"
         },
         "status": "APPROVED",
-        "credits": 4.4399999999999995,
+        "credits": 0,
         "createdAt": "2025-08-30T20:39:42.317Z",
-        "updatedAt": "2025-08-31T01:29:23.651Z",
+        "updatedAt": "2025-08-31T03:31:29.886Z",
         "creditId": "9820",
         "verifiedBy": "1",
         "verifiedAt": "2025-08-30T20:44:53.527Z",
-        "listedCredits": 5.5600000000000005
+        "listedCredits": 10
       }
     ],
     [
@@ -74,9 +74,9 @@
           "additionalNotes": ""
         },
         "status": "APPROVED",
-        "credits": 10,
+        "credits": 0,
         "createdAt": "2025-08-30T21:11:53.490Z",
-        "updatedAt": "2025-08-30T21:12:01.905Z",
+        "updatedAt": "2025-08-31T03:31:29.888Z",
         "producer": {
           "id": "2",
           "name": "User 0x2dA7...e0aC",
@@ -84,7 +84,8 @@
         },
         "creditId": "5903",
         "verifiedBy": "1",
-        "verifiedAt": "2025-08-30T21:12:01.905Z"
+        "verifiedAt": "2025-08-30T21:12:01.905Z",
+        "listedCredits": 10
       }
     ],
     [
@@ -99,12 +100,13 @@
           "additionalNotes": ""
         },
         "status": "APPROVED",
-        "credits": 10,
+        "credits": 0,
         "createdAt": "2025-08-30T21:26:28.054Z",
-        "updatedAt": "2025-08-30T21:26:37.373Z",
+        "updatedAt": "2025-08-31T03:31:29.890Z",
         "creditId": "1794",
         "verifiedBy": "1",
-        "verifiedAt": "2025-08-30T21:26:37.373Z"
+        "verifiedAt": "2025-08-30T21:26:37.373Z",
+        "listedCredits": 10
       }
     ],
     [
@@ -119,12 +121,13 @@
           "additionalNotes": ""
         },
         "status": "APPROVED",
-        "credits": 11.23,
+        "credits": 0,
         "createdAt": "2025-08-30T21:27:30.406Z",
-        "updatedAt": "2025-08-30T21:27:35.376Z",
+        "updatedAt": "2025-08-31T03:31:29.891Z",
         "creditId": "2028",
         "verifiedBy": "1",
-        "verifiedAt": "2025-08-30T21:27:35.376Z"
+        "verifiedAt": "2025-08-30T21:27:35.376Z",
+        "listedCredits": 11.23
       }
     ],
     [
@@ -139,12 +142,13 @@
           "additionalNotes": ""
         },
         "status": "APPROVED",
-        "credits": 222.22,
+        "credits": 37.889999999999986,
         "createdAt": "2025-08-30T21:33:06.060Z",
-        "updatedAt": "2025-08-30T21:33:11.809Z",
+        "updatedAt": "2025-08-31T03:31:29.892Z",
         "creditId": "9703",
         "verifiedBy": "1",
-        "verifiedAt": "2025-08-30T21:33:11.809Z"
+        "verifiedAt": "2025-08-30T21:33:11.809Z",
+        "listedCredits": 184.32999999999998
       }
     ],
     [
@@ -206,7 +210,87 @@
         "verifiedBy": "1",
         "verifiedAt": "2025-08-30T22:01:56.616Z"
       }
+    ],
+    [
+      "11",
+      {
+        "_id": "11",
+        "producerId": "2",
+        "productionData": {
+          "productionDate": "2025-08-07",
+          "quantity": 1111,
+          "location": "rajkot",
+          "additionalNotes": ""
+        },
+        "status": "APPROVED",
+        "credits": 11.11,
+        "createdAt": "2025-08-31T02:29:03.171Z",
+        "updatedAt": "2025-08-31T02:29:13.346Z",
+        "creditId": "2972",
+        "verifiedBy": "1",
+        "verifiedAt": "2025-08-31T02:29:13.346Z"
+      }
+    ],
+    [
+      "12",
+      {
+        "_id": "12",
+        "producerId": "2",
+        "productionData": {
+          "productionDate": "2025-08-13",
+          "quantity": 2132,
+          "location": "rasd",
+          "additionalNotes": ""
+        },
+        "status": "APPROVED",
+        "credits": 21.32,
+        "createdAt": "2025-08-31T02:53:03.780Z",
+        "updatedAt": "2025-08-31T02:53:38.914Z",
+        "creditId": "366",
+        "verifiedBy": "1",
+        "verifiedAt": "2025-08-31T02:53:38.914Z"
+      }
+    ],
+    [
+      "13",
+      {
+        "_id": "13",
+        "producerId": "2",
+        "productionData": {
+          "productionDate": "2025-08-05",
+          "quantity": 1222,
+          "location": "sdf",
+          "additionalNotes": ""
+        },
+        "status": "APPROVED",
+        "credits": 12.22,
+        "createdAt": "2025-08-31T02:58:30.340Z",
+        "updatedAt": "2025-08-31T02:58:54.666Z",
+        "creditId": "92",
+        "verifiedBy": "1",
+        "verifiedAt": "2025-08-31T02:58:54.666Z"
+      }
+    ],
+    [
+      "14",
+      {
+        "_id": "14",
+        "producerId": "2",
+        "productionData": {
+          "productionDate": "2025-08-31",
+          "quantity": 200,
+          "location": "DAIICT",
+          "additionalNotes": "DEMO"
+        },
+        "status": "APPROVED",
+        "credits": 2,
+        "createdAt": "2025-08-31T03:29:24.315Z",
+        "updatedAt": "2025-08-31T03:30:30.882Z",
+        "creditId": "643",
+        "verifiedBy": "1",
+        "verifiedAt": "2025-08-31T03:30:30.882Z"
+      }
     ]
   ],
-  "nextId": 11
+  "nextId": 15
 }

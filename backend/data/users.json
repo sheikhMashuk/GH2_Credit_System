@@ -19,9 +19,9 @@
         "name": "User 0x2dA7...e0aC",
         "walletAddress": "0x2da70255e14c94791c31150fcf4342a977abe0ac",
         "role": "PRODUCER",
-        "totalCredits": 275.67,
+        "totalCredits": 322.32000000000005,
         "createdAt": "2025-08-30T20:26:22.426Z",
-        "updatedAt": "2025-08-30T21:40:21.660Z"
+        "updatedAt": "2025-08-31T03:30:30.883Z"
       }
     ],
     [
@@ -117,7 +117,9 @@
         "role": "BUYER",
         "totalCredits": 19,
         "createdAt": "2025-08-31T00:56:09.303Z",
-        "updatedAt": "2025-08-31T01:32:00.089Z"
+        "updatedAt": "2025-08-31T03:33:50.746Z",
+        "creditsBurned": 13,
+        "lastPurchaseDate": "2025-08-31T03:33:50.745Z"
       }
     ]
   ],

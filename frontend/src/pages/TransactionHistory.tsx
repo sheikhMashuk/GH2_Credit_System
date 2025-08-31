@@ -153,6 +153,11 @@ const TransactionHistory: React.FC = () => {
                       <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getTransactionTypeColor(transaction.type)}`}>
                         {transaction.type.replace('_', ' ')}
                       </span>
+                      {transaction.burnStatus === 'BURNED_AND_RETIRED' && (
+                        <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800">
+                          🔥 BURNED
+                        </span>
+                      )}
                       <span className="text-sm text-gray-500">
                         {new Date(transaction.createdAt).toLocaleString()}
                       </span>
@@ -161,6 +166,11 @@ const TransactionHistory: React.FC = () => {
                       <div className="text-lg font-semibold text-gray-900">
                         {transaction.credits} Credits
                       </div>
+                      {transaction.creditsBurned && (
+                        <div className="text-xs text-orange-600 font-medium">
+                          {transaction.creditsBurned} Burned & Retired
+                        </div>
+                      )}
                       {transaction.credits && (
                         <div className="text-sm text-gray-600">
                           ${(transaction.credits * 0.001 * 2000).toFixed(2)}
@@ -225,13 +235,36 @@ const TransactionHistory: React.FC = () => {
                     )}
                   </div>
 
-                  {transaction.status && (
-                    <div className="mt-3 pt-3 border-t border-gray-100">
-                      <span className="text-xs text-gray-500">
-                        Status: <span className="font-medium text-green-600">{transaction.status}</span>
-                      </span>
+                  <div className="mt-3 pt-3 border-t border-gray-100 flex justify-between items-center">
+                    <div className="flex items-center space-x-4">
+                      {transaction.status && (
+                        <span className="text-xs text-gray-500">
+                          Status: <span className="font-medium text-green-600">{transaction.status}</span>
+                        </span>
+                      )}
+                      {transaction.burnStatus === 'BURNED_AND_RETIRED' && (
+                        <span className="text-xs text-orange-600 font-medium">
+                          ♻️ Carbon Offset Achieved
+                        </span>
+                      )}
                     </div>
-                  )}
+                    {transaction.ipfsHash && (
+                      <div className="text-right">
+                        <button
+                          onClick={() => copyToClipboard(transaction.ipfsHash!, 'IPFS Hash')}
+                          className="text-xs text-purple-600 hover:text-purple-800 hover:bg-purple-50 px-2 py-1 rounded transition-colors flex items-center gap-1"
+                          title="Click to copy IPFS hash - permanent record"
+                        >
+                          📁 IPFS Record
+                          {copiedItems.has(`IPFS Hash-${transaction.ipfsHash}`) ? (
+                            <Check className="h-3 w-3 text-green-600" />
+                          ) : (
+                            <Copy className="h-3 w-3" />
+                          )}
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

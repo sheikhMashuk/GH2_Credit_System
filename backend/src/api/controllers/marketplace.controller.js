@@ -75,6 +75,16 @@ class MarketplaceController {
           sourceSubmissions: submissions.map(s => s._id)
         });
 
+        // Update IPFS for bulk listing creation
+        const CreditLifecycleService = require('../../services/credit-lifecycle.service');
+        const ipfsResult = await CreditLifecycleService.handleCreditStatusChange(
+          listing.creditId,
+          'listed_for_sale',
+          `Bulk listing created with ${creditsToSell} credits from ${submissions.length} submissions`
+        );
+        
+        console.log('IPFS bulk listing update result:', ipfsResult);
+
         // Deduct credits from submissions proportionally
         let remainingCreditsToDeduct = creditsToSell;
         for (const submission of submissions) {
@@ -148,6 +158,16 @@ class MarketplaceController {
         productionDate: submission.productionData.productionDate,
         listedAt: new Date()
       });
+
+      // Update IPFS for individual credit listing
+      const CreditLifecycleService = require('../../services/credit-lifecycle.service');
+      const ipfsResult = await CreditLifecycleService.handleCreditStatusChange(
+        creditId,
+        'listed_for_sale',
+        `Individual listing created with ${creditsToSell} credits`
+      );
+      
+      console.log('IPFS individual listing update result:', ipfsResult);
 
       // Deduct credits from the specific submission
       const newCredits = submission.credits - creditsToSell;
@@ -281,6 +301,23 @@ class MarketplaceController {
           listing.creditId
         );
 
+        // Burn credits and store burn record to IPFS
+        const CreditLifecycleService = require('../../services/credit-lifecycle.service');
+        const burnResult = await CreditLifecycleService.handleCreditTransfer(
+          listing.creditId,
+          listing.producer.walletAddress,
+          buyer.walletAddress,
+          quantity,
+          'sale'
+        );
+        
+        console.log('Credit burn and IPFS storage result:', burnResult);
+        
+        if (burnResult.success && burnResult.burned) {
+          console.log(`✓ ${quantity} credits burned and permanently retired`);
+          console.log(`✓ Burn record stored in IPFS: ${burnResult.ipfsHash}`);
+        }
+
         // Create transaction record with payment details
         await MarketplaceModel.createTransaction({
           type: 'CREDIT_PURCHASE',
@@ -293,7 +330,10 @@ class MarketplaceController {
           blockNumber: transferResult.blockNumber,
           paymentAmount: paymentAmount,
           paymentMethod: transactionHash ? 'ETH' : 'SYSTEM',
-          status: 'CONFIRMED'
+          status: 'CONFIRMED',
+          ipfsHash: burnResult.success ? burnResult.ipfsHash : null,
+          creditsBurned: burnResult.burned ? quantity : 0,
+          burnStatus: burnResult.burned ? 'BURNED_AND_RETIRED' : 'TRANSFERRED'
         });
 
         // Update listing (reduce available credits or mark as sold)
@@ -306,19 +346,26 @@ class MarketplaceController {
           });
         }
 
-        // Update buyer's credit balance
+        // Update buyer's credit balance - credits are burned, not added to balance
+        // Buyer receives carbon offset benefit, not transferable credits
         const currentBuyerCredits = buyer.totalCredits || 0;
         await UserModel.findByIdAndUpdate(buyer._id, {
-          totalCredits: currentBuyerCredits + quantity
+          totalCredits: currentBuyerCredits, // No change - credits are burned
+          creditsBurned: (buyer.creditsBurned || 0) + quantity,
+          lastPurchaseDate: new Date()
         });
 
         res.json({
-          message: 'Credits purchased successfully',
+          message: 'Credits purchased and burned successfully',
           purchase: {
             credits: quantity,
             totalCost,
             transactionHash: transferResult.transactionHash,
-            seller: listing.producer.name
+            seller: listing.producer.name,
+            burned: true,
+            burnedAt: burnResult.burnedAt,
+            ipfsHash: burnResult.ipfsHash,
+            carbonOffset: `${quantity} credits permanently retired for carbon offset`
           }
         });
 

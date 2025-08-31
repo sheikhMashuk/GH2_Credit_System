@@ -61,6 +61,40 @@ async function testIPFSIntegration() {
   } catch (error) {
     console.log('✗ Credit lifecycle test failed:', error.message);
   }
+
+  // Test 4: Credit transfer test
+  console.log('\n4. Testing credit transfer...');
+  try {
+    const transferResult = await CreditLifecycleService.handleCreditTransfer(
+      'CREDIT-001',
+      '0x1234567890abcdef1234567890abcdef12345678',
+      '0xabcdef1234567890abcdef1234567890abcdef12',
+      50,
+      'sale'
+    );
+    console.log('✓ Credit transfer test result:', transferResult.success ? 'SUCCESS' : 'FAILED');
+    if (transferResult.ipfsHash) {
+      console.log('Transfer IPFS Hash:', transferResult.ipfsHash);
+    }
+  } catch (error) {
+    console.log('✗ Credit transfer test failed:', error.message);
+  }
+
+  // Test 5: Credit status change test
+  console.log('\n5. Testing credit status change...');
+  try {
+    const statusResult = await CreditLifecycleService.handleCreditStatusChange(
+      'CREDIT-001',
+      'listed_for_sale',
+      'Credit listed on marketplace for testing'
+    );
+    console.log('✓ Credit status change test result:', statusResult.success ? 'SUCCESS' : 'FAILED');
+    if (statusResult.ipfsHash) {
+      console.log('Status Change IPFS Hash:', statusResult.ipfsHash);
+    }
+  } catch (error) {
+    console.log('✗ Credit status change test failed:', error.message);
+  }
   
   console.log('\n=== Test Complete ===');
 }

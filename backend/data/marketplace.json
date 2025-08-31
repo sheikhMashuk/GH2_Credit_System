@@ -28,9 +28,9 @@
           "7",
           "8"
         ],
-        "status": "ACTIVE",
+        "status": "SOLD",
         "createdAt": "2025-08-30T23:00:10.514Z",
-        "updatedAt": "2025-08-31T00:56:49.479Z"
+        "updatedAt": "2025-08-31T03:03:31.238Z"
       }
     ],
     [
@@ -175,9 +175,9 @@
           "name": "User 0x2dA7...e0aC",
           "walletAddress": "0x2da70255e14c94791c31150fcf4342a977abe0ac"
         },
-        "credits": 10,
+        "credits": 7,
         "pricePerCredit": 0.0001,
-        "totalPrice": 0.001,
+        "totalPrice": 0.0007,
         "quantity": 28667,
         "location": "Multiple Locations",
         "productionDate": "Various Dates",
@@ -195,7 +195,7 @@
         ],
         "status": "ACTIVE",
         "createdAt": "2025-08-31T01:26:58.720Z",
-        "updatedAt": "2025-08-31T01:26:58.720Z"
+        "updatedAt": "2025-08-31T03:20:25.058Z"
       }
     ],
     [
@@ -229,6 +229,151 @@
         "status": "SOLD",
         "createdAt": "2025-08-31T01:29:23.632Z",
         "updatedAt": "2025-08-31T01:32:00.088Z"
+      }
+    ],
+    [
+      "8",
+      {
+        "_id": "8",
+        "creditId": "BULK_1756609364305",
+        "producerId": "2",
+        "producer": {
+          "name": "User 0x2dA7...e0aC",
+          "walletAddress": "0x2da70255e14c94791c31150fcf4342a977abe0ac"
+        },
+        "credits": 100,
+        "pricePerCredit": 0.001,
+        "totalPrice": 0.1,
+        "quantity": 33132,
+        "location": "Multiple Locations",
+        "productionDate": "Various Dates",
+        "listedAt": "2025-08-31T03:02:44.306Z",
+        "isBulkListing": true,
+        "sourceSubmissions": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5",
+          "6",
+          "7",
+          "8",
+          "11",
+          "12",
+          "13"
+        ],
+        "status": "ACTIVE",
+        "createdAt": "2025-08-31T03:02:44.306Z",
+        "updatedAt": "2025-08-31T03:02:44.306Z"
+      }
+    ],
+    [
+      "9",
+      {
+        "_id": "9",
+        "creditId": "BULK_1756610338672",
+        "producerId": "2",
+        "producer": {
+          "name": "User 0x2dA7...e0aC",
+          "walletAddress": "0x2da70255e14c94791c31150fcf4342a977abe0ac"
+        },
+        "credits": 100,
+        "pricePerCredit": 0.001,
+        "totalPrice": 0.1,
+        "quantity": 33132,
+        "location": "Multiple Locations",
+        "productionDate": "Various Dates",
+        "listedAt": "2025-08-31T03:18:58.672Z",
+        "isBulkListing": true,
+        "sourceSubmissions": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5",
+          "6",
+          "7",
+          "8",
+          "11",
+          "12",
+          "13"
+        ],
+        "status": "ACTIVE",
+        "createdAt": "2025-08-31T03:18:58.672Z",
+        "updatedAt": "2025-08-31T03:18:58.672Z"
+      }
+    ],
+    [
+      "10",
+      {
+        "_id": "10",
+        "creditId": "BULK_1756610384510",
+        "producerId": "2",
+        "producer": {
+          "name": "User 0x2dA7...e0aC",
+          "walletAddress": "0x2da70255e14c94791c31150fcf4342a977abe0ac"
+        },
+        "credits": 10,
+        "pricePerCredit": 0.001,
+        "totalPrice": 0.01,
+        "quantity": 33132,
+        "location": "Multiple Locations",
+        "productionDate": "Various Dates",
+        "listedAt": "2025-08-31T03:19:44.510Z",
+        "isBulkListing": true,
+        "sourceSubmissions": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5",
+          "6",
+          "7",
+          "8",
+          "11",
+          "12",
+          "13"
+        ],
+        "status": "ACTIVE",
+        "createdAt": "2025-08-31T03:19:44.510Z",
+        "updatedAt": "2025-08-31T03:19:44.510Z"
+      }
+    ],
+    [
+      "11",
+      {
+        "_id": "11",
+        "creditId": "BULK_1756611089872",
+        "producerId": "2",
+        "producer": {
+          "name": "User 0x2dA7...e0aC",
+          "walletAddress": "0x2da70255e14c94791c31150fcf4342a977abe0ac"
+        },
+        "credits": 3,
+        "pricePerCredit": 0.001,
+        "totalPrice": 0.003,
+        "quantity": 33332,
+        "location": "Multiple Locations",
+        "productionDate": "Various Dates",
+        "listedAt": "2025-08-31T03:31:29.872Z",
+        "isBulkListing": true,
+        "sourceSubmissions": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5",
+          "6",
+          "7",
+          "8",
+          "11",
+          "12",
+          "13",
+          "14"
+        ],
+        "status": "ACTIVE",
+        "createdAt": "2025-08-31T03:31:29.873Z",
+        "updatedAt": "2025-08-31T03:33:50.744Z"
       }
     ]
   ],
@@ -318,8 +463,71 @@
         "status": "CONFIRMED",
         "createdAt": "2025-08-31T01:32:00.086Z"
       }
+    ],
+    [
+      "6",
+      {
+        "_id": "6",
+        "type": "CREDIT_PURCHASE",
+        "fromAddress": "0x2da70255e14c94791c31150fcf4342a977abe0ac",
+        "toAddress": "0x5debc79c4e64400b5a9dabdc1749fd98ffbb69bf",
+        "credits": 3,
+        "price": 3,
+        "listingId": "1",
+        "transactionHash": "0xe5477bd210ad53e251c6d59b311dfa5338e7d975aaf1cb5926a7afeb92a58e50",
+        "blockNumber": 88227,
+        "paymentAmount": "0.003",
+        "paymentMethod": "ETH",
+        "status": "CONFIRMED",
+        "ipfsHash": null,
+        "creditsBurned": 0,
+        "burnStatus": "TRANSFERRED",
+        "createdAt": "2025-08-31T03:03:31.237Z"
+      }
+    ],
+    [
+      "7",
+      {
+        "_id": "7",
+        "type": "CREDIT_PURCHASE",
+        "fromAddress": "0x2da70255e14c94791c31150fcf4342a977abe0ac",
+        "toAddress": "0x5debc79c4e64400b5a9dabdc1749fd98ffbb69bf",
+        "credits": 3,
+        "price": 0.00030000000000000003,
+        "listingId": "6",
+        "transactionHash": "0x8447e20955e747092cec3bc285a2f86cc07bf09dafaf0dc19e8fa2a2e689f132",
+        "blockNumber": 398461,
+        "paymentAmount": "3000000000000000",
+        "paymentMethod": "ETH",
+        "status": "CONFIRMED",
+        "ipfsHash": null,
+        "creditsBurned": 0,
+        "burnStatus": "TRANSFERRED",
+        "createdAt": "2025-08-31T03:20:25.057Z"
+      }
+    ],
+    [
+      "8",
+      {
+        "_id": "8",
+        "type": "CREDIT_PURCHASE",
+        "fromAddress": "0x2da70255e14c94791c31150fcf4342a977abe0ac",
+        "toAddress": "0x5debc79c4e64400b5a9dabdc1749fd98ffbb69bf",
+        "credits": 7,
+        "price": 0.007,
+        "listingId": "11",
+        "transactionHash": "0x51e8d0241544d18fc2b2d02760d21f60fea20adf54eef12efa7bba33a6694622",
+        "blockNumber": 128757,
+        "paymentAmount": "7000000000000000",
+        "paymentMethod": "ETH",
+        "status": "CONFIRMED",
+        "ipfsHash": null,
+        "creditsBurned": 0,
+        "burnStatus": "TRANSFERRED",
+        "createdAt": "2025-08-31T03:33:50.741Z"
+      }
     ]
   ],
-  "nextListingId": 8,
-  "nextTransactionId": 6
+  "nextListingId": 12,
+  "nextTransactionId": 9
 }

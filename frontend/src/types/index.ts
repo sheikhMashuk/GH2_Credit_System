@@ -71,6 +71,9 @@ export interface Transaction {
   status: 'PENDING' | 'CONFIRMED' | 'FAILED';
   createdAt: string;
   listingId?: string;
+  creditsBurned?: number;
+  burnStatus?: 'BURNED_AND_RETIRED' | 'TRANSFERRED';
+  ipfsHash?: string;
 }
 
 export interface AuthContextType {
